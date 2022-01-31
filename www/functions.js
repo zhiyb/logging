@@ -369,13 +369,12 @@ function ChartZoomX(data, {
     if (yDomainAuto) {
       let regY = undefined;
       if (stacked)
-        regY = series[series.length-1].filter(I => !isNaN(I[1]) && minX <= X[I.i] && maxX >= X[I.i]).map(([, y2]) => y2);
+        regY = series[series.length-1].filter(I => D[I.i] && minX <= X[I.i] && maxX >= X[I.i]).map(([, y2]) => y2);
       else
         regY = I.filter(i => D[i] && minX <= X[i] && X[i] <= maxX).map(i => Y[i]);
-      const maxY = d3.max(regY);
-      if (maxY !== undefined) {
-        const minY = d3.min(regY);
-        zy = yType([minY, maxY], yRange);
+      const extY = d3.extent(regY);
+      if (extY[0] !== undefined) {
+        zy = yType(extY, yRange);
         gy.call(yAxis, zy);
         gGrid.call(grid, zx, zy);
       }

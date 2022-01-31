@@ -31,7 +31,7 @@ if ($db->connect_error)
     error(500, "Connection failed: " . $db->connect_error);
 $db->set_charset('utf8mb4');
 
-$stmt = $db->prepare('SELECT * FROM ' . $tbl . ' WHERE hostname = ? AND `ts` > SUBDATE(UTC_TIMESTAMP(), INTERVAL 24 HOUR) ORDER BY ts DESC');
+$stmt = $db->prepare('SELECT * FROM ' . $tbl . ' WHERE hostname = ? AND `ts` > SUBDATE(UTC_TIMESTAMP(), INTERVAL 24 HOUR) ORDER BY ts');
 $stmt->bind_param('s', $hn);
 $stmt->execute();
 $obj = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);

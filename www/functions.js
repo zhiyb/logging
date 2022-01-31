@@ -156,7 +156,7 @@ function ChartZoomX(data, {
   const Y = d3.map(data, y);
   const Z = d3.map(data, z);
   const O = d3.map(data, d => d);
-  if (defined === undefined) defined = (d, i) => !isNaN(X[i]);
+  if (defined === undefined) defined = (d, i) => !isNaN(Y[i]);
   const D = d3.map(data, defined);
 
   // Compute default domains, and unique the z-domain.

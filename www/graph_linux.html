@@ -52,12 +52,12 @@ $.getJSON(url + "cpu", data => {
     if (obj.id > maxcpu)
       maxcpu = obj.id;
 
-    let ts = obj.idle === null ? NaN : parse_ts(obj.ts);
+    let ts = parse_ts(obj.ts);
 
     values.push({
       ts: ts,
       type: "cpu" + obj.id,
-      val: 100 - obj.idle,
+      val: obj.idle === null ? NaN : 100 - obj.idle,
     });
   }
 
@@ -82,23 +82,20 @@ $.getJSON(url + "mem", data => {
   let values = [];
   let total = 0;
   for (let obj of data) {
-    let ts = NaN;
-    if (obj.total !== null) {
-      ts = parse_ts(obj.ts);
-      total = obj.total / 1024 / 1024 / 1024;
-    }
+    let ts = parse_ts(obj.ts);
+    total = obj.total / 1024 / 1024 / 1024;
 
     values.push({
       ts: ts,
       type: "used",
-      val: (obj.total - obj.buffers - obj.cached - obj.zfs_arc - obj.free) / 1024 / 1024 / 1024,
+      val: obj.total === null ? NaN : (obj.total - obj.buffers - obj.cached - obj.zfs_arc - obj.free) / 1024 / 1024 / 1024,
     });
     // "total", "available", "percent", "used", "free", "active", "inactive", "buffers", "cached", "shared", "slab"
     for (let key of ["buffers", "cached", "zfs_arc", "free"]) {
       values.push({
         ts: ts,
         type: key,
-        val: obj[key] / 1024 / 1024 / 1024,
+        val: obj.total === null ? NaN : obj[key] / 1024 / 1024 / 1024,
       });
     }
   }
@@ -124,7 +121,7 @@ $.getJSON(url + "netio", data => {
   for (let obj of data) {
     if (obj.nic === "lo")
       continue;
-    let ts = obj.interval === null ? NaN : parse_ts(obj.ts);
+    let ts = parse_ts(obj.ts);
     values.push({
       ts: ts,
       type: obj.nic + "_tx",
@@ -156,11 +153,11 @@ $.getJSON(url + "temp", data => {
 
   let values = [];
   for (let obj of data) {
-    let ts = obj.temp === null ? NaN : parse_ts(obj.ts);
+    let ts = parse_ts(obj.ts);
     values.push({
       ts: ts,
       type: obj.label !== "" ? obj.label : obj.sensor,
-      val: obj.temp,
+      val: obj.temp === null ? NaN : obj.temp,
     });
   }
 

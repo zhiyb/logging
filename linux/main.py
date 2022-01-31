@@ -6,7 +6,7 @@ import json
 import traceback
 from urllib import request, parse
 
-url = "http://nas.wg/logging/record.php"
+url = "http://zhiyb.me/logging/record.php"
 interval = 30
 
 

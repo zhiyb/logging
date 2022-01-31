@@ -13,6 +13,8 @@
 <div id="graph_cpu"></div>
 <h1>Memory</h1>
 <div id="graph_mem"></div>
+<h1>Network IO</h1>
+<div id="graph_netio"></div>
 <h1>Temperature</h1>
 <div id="graph_temp"></div>
 
@@ -521,6 +523,41 @@ d3.json(url + "mem").then(data => {
 
   $('#graph_mem').append(Swatches(chart.scales.color));
   $('#graph_mem').append(chart);
+});
+
+d3.json(url + "netio").then(data => {
+  if (!data.length)
+    return;
+
+  let values = [];
+  for (let obj of data) {
+    let ts = obj.interval === null ? NaN : parse_ts(obj.ts);
+    values.push({
+      ts: ts,
+      type: obj.nic + "_tx",
+      val: obj.interval === null ? NaN : obj.bytes_sent / obj.interval / 1024 / 1024,
+    });
+    values.push({
+      ts: ts,
+      type: obj.nic + "_rx",
+      val: obj.interval === null ? NaN : obj.bytes_recv / obj.interval / 1024 / 1024,
+    });
+  }
+
+  let chart = ChartZoomX(values, {
+    x: d => d.ts,
+    y: d => d.val,
+    z: d => d.type,
+    yLabel: "↑ Mbps",
+    width: 1024,
+    height: 500,
+    //curve: d3.curveMonotoneX,
+    mixBlendMode: "normal",
+    linkedZoom: linkedZoom,
+  })
+
+  $('#graph_netio').append(Swatches(chart.scales.color));
+  $('#graph_netio').append(chart);
 });
 
 d3.json(url + "temp").then(data => {

@@ -95,6 +95,25 @@ function Swatches(color, {
   <div>${domain.map(value => htl.html`<span class="${id}" style="--color: ${color(value)}">${format(value)}</span>`)}</div>`;
 }
 
+const formatMillisecond = d3.timeFormat(".%L"),
+  formatSecond = d3.timeFormat(":%S"),
+  formatMinute = d3.timeFormat("%H:%M"),
+  formatHour = d3.timeFormat("%H:%M"),
+  formatDay = d3.timeFormat("%a %d"),
+  formatWeek = d3.timeFormat("%b %d"),
+  formatMonth = d3.timeFormat("%B"),
+  formatYear = d3.timeFormat("%Y");
+
+function multiFormat(date) {
+  return (d3.timeSecond(date) < date ? formatMillisecond
+    : d3.timeMinute(date) < date ? formatSecond
+    : d3.timeHour(date) < date ? formatMinute
+    : d3.timeDay(date) < date ? formatHour
+    : d3.timeMonth(date) < date ? (d3.timeWeek(date) < date ? formatDay : formatWeek)
+    : d3.timeYear(date) < date ? formatMonth
+    : formatYear)(date);
+}
+
 // Copyright 2021 Observable, Inc.
 // Released under the ISC license.
 // https://observablehq.com/@d3/multi-line-chart
@@ -165,7 +184,7 @@ function ChartZoomX(data, {
 
   let xAxis = (g, x) => g
     .attr("transform", `translate(0,${height - marginBottom})`)
-    .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0))
+    .call(d3.axisBottom(x).tickFormat(multiFormat).ticks(width / 80).tickSizeOuter(0))
     .call(g => g.select(".domain").attr("display", "none"));
 
   let yAxis = (g, y) => g

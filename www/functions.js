@@ -399,9 +399,6 @@ function ChartZoomX(data, {
   }
 
   svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
-  //zoomed({transform: d3.zoomIdentity});
-  //svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
-  //svg.call(zoomed).call(zoomed.transform, d3.zoomIdentity);
   if (!yDomainAuto) { // Initialisation necessary
     gy.call(yAxis, zy);
     gGrid.call(grid, zx, zy);

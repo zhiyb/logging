@@ -45,10 +45,7 @@ function db_insert($db, $tbl, $ts, $hn, $cols, $types, $vals) {
     foreach ($cols as $c)
         $scols .= ",`" . $c . "`";
     $pars = str_repeat(",?", count($cols));
-    $sql  = 'INSERT INTO ' . $tbl . ' (ts,hostname' . $scols . ') VALUES (?,?' . $pars . ')';
-    //var_dump($sql);
-    //var_dump('ss' . $types, $ts, $hn, ...$vals);
-    $stmt = $db->prepare($sql);
+    $stmt = $db->prepare('INSERT INTO ' . $tbl . ' (ts,hostname' . $scols . ') VALUES (?,?' . $pars . ')');
     if ($stmt === false)
         return ["code" => 500, "msg" => $db->error];
     $stmt->bind_param('ss' . $types, $ts, $hn, ...$vals);
@@ -112,17 +109,4 @@ foreach ($ret as $r) {
 }
 
 echo json_encode(["code" => $code, "msg" => $msg, "tables" => $ret]);
-
-//var_dump($obj, $ts, $hn);
-die();
-
-$hn = "zhiyb-Linux";
-
-$stmt = $db->prepare('SELECT * FROM ' . $tbl . ' WHERE hostname = ? AND `ts` > SUBDATE(UTC_TIMESTAMP(), INTERVAL 6 HOUR) ORDER BY ts DESC');
-$stmt->bind_param('s', $hn);
-$stmt->execute();
-$obj = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
-header('Content-Type: text/plain');
-echo json_encode($obj);
 ?>

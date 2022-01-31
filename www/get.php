@@ -31,8 +31,27 @@ if ($db->connect_error)
     error(500, "Connection failed: " . $db->connect_error);
 $db->set_charset('utf8mb4');
 
-$stmt = $db->prepare('SELECT * FROM ' . $tbl . ' WHERE hostname = ? AND `ts` > SUBDATE(UTC_TIMESTAMP(), INTERVAL 24 HOUR) ORDER BY ts');
+$tslimit = ' AND `ts` > SUBDATE(UTC_TIMESTAMP(), INTERVAL 24 HOUR) ORDER BY ts';
+
+$stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ?' . $tslimit);
 $stmt->bind_param('s', $hn);
+
+if ($tbl == "cpu") {
+    $id = null;
+    if (array_key_exists('id', $_GET))
+        $id = intval($_GET['id']);
+
+    if (is_int($id)) {
+        // Special case, details for specific CPU core
+        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ? AND `id` = ?' . $tslimit);
+        $stmt->bind_param('si', $hn, $id);
+    } else {
+        // Special case, generic idle percentage for CPU cores
+        $stmt = $db->prepare('SELECT `ts`, `id`, `idle` FROM `' . $tbl . '` WHERE `hostname` = ?' . $tslimit);
+        $stmt->bind_param('s', $hn);
+    }
+}
+
 $stmt->execute();
 $obj = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 

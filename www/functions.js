@@ -24,6 +24,7 @@ Id.prototype.toString = function() {
 function Swatches(color, {
   columns = null,
   format,
+  links,
   unknown: formatUnknown,
   swatchSize = 15,
   swatchWidth = swatchSize,
@@ -92,7 +93,9 @@ function Swatches(color, {
 }
 
   </style>
-  <div>${domain.map(value => htl.html`<span class="${id}" style="--color: ${color(value)}">${format(value)}</span>`)}</div>`;
+  <div>${domain.map(value => links ? htl.html`<a href="${links[value]}" style="color:inherit;">
+  <span class="${id}" style="--color: ${color(value)}">${format(value)}</span></a>` :
+  htl.html`<span class="${id}" style="--color: ${color(value)}">${format(value)}</span>`)}</div>`;
 }
 
 const formatMillisecond = d3.timeFormat(".%L"),
@@ -124,7 +127,7 @@ function ChartZoomX(data, {
   title, // given d in data, returns the title text
   defined, // for gaps in data
   stacked = false,  // stacked area chart
-  offset = d3.stackOffsetDiverging, // stack offset method
+  offset = d3.stackOffsetNone, // stack offset method
   order = d3.stackOrderNone, // stack order method
   curve = d3.curveLinear, // method of interpolation between points
   marginTop = 20, // top margin, in pixels
@@ -364,7 +367,11 @@ function ChartZoomX(data, {
     const minX = zx.invert(marginLeft);
     const maxX = zx.invert(width - marginRight);
     if (yDomainAuto) {
-      const regY = data.filter(d => !isNaN(x(d)) && minX <= x(d) && x(d) <= maxX).map(y);
+      let regY = undefined;
+      if (stacked)
+        regY = series[series.length-1].filter(I => !isNaN(I[1]) && minX <= X[I.i] && maxX >= X[I.i]).map(([, y2]) => y2);
+      else
+        regY = data.filter(d => !isNaN(y(d)) && minX <= x(d) && x(d) <= maxX).map(y);
       const maxY = d3.max(regY);
       if (maxY !== undefined) {
         const minY = d3.min(regY);
@@ -418,9 +425,15 @@ function parse_ts(ts) {
   return new Date(...dt);
 }
 
-function add_chart(e, values, opts) {
-  let chart = ChartZoomX(values, opts);
-  e.append(Swatches(chart.scales.color));
+function add_chart(e, values, opts, baseUrl = null) {
+  const chart = ChartZoomX(values, opts);
+  let links = null;
+  if (baseUrl !== null) {
+    links = {};
+    for (let d of chart.scales.color.domain())
+      links[d] = baseUrl + d;
+  }
+  e.append(Swatches(chart.scales.color, {links: links}));
   e.append(chart);
 }
 

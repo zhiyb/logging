@@ -61,6 +61,7 @@ $.getJSON(url + "cpu", data => {
     });
   }
 
+  const baseUrl = "graph_cpu.html?h=" + hn + "&t=cpu&l=";
   add_chart($('#graph_cpu'), values, {
     x: d => d.ts,
     y: d => d.val,
@@ -72,7 +73,7 @@ $.getJSON(url + "cpu", data => {
     //curve: d3.curveMonotoneX,
     mixBlendMode: "normal",
     linkedZoom: linkedZoom,
-  });
+  }, baseUrl);
 });
 
 $.getJSON(url + "mem", data => {

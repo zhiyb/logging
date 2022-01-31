@@ -311,8 +311,8 @@ function ChartZoomX(data, {
       .attr("id", clipId.id)
     .append("rect")
       .attr("x", marginLeft)
-      .attr("y", 0)
-      .attr("height", height)
+      .attr("y", marginTop)
+      .attr("height", height - marginTop - marginBottom)
       .attr("width", width - marginLeft - marginRight);
   path.attr("clip-path", clipId);
 

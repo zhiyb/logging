@@ -123,6 +123,8 @@ $.getJSON(url + "netio", data => {
 
   let values = [];
   for (let obj of data) {
+    if (obj.nic === "lo")
+      continue;
     let ts = obj.interval === null ? NaN : parse_ts(obj.ts);
     values.push({
       ts: ts,

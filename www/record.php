@@ -43,11 +43,14 @@ $db->set_charset('utf8mb4');
 function db_insert($db, $tbl, $ts, $hn, $cols, $types, $vals) {
     $scols = "";
     foreach ($cols as $c)
-        $scols .= "," . $c;
+        $scols .= ",`" . $c . "`";
     $pars = str_repeat(",?", count($cols));
     $sql  = 'INSERT INTO ' . $tbl . ' (ts,hostname' . $scols . ') VALUES (?,?' . $pars . ')';
-    var_dump($sql);
+    //var_dump($sql);
+    //var_dump('ss' . $types, $ts, $hn, ...$vals);
     $stmt = $db->prepare($sql);
+    if ($stmt === false)
+        return ["code" => 500, "msg" => $db->error];
     $stmt->bind_param('ss' . $types, $ts, $hn, ...$vals);
     if ($stmt->execute() !== true)
         return ["code" => 500, "msg" => $stmt->error];
@@ -58,6 +61,7 @@ $validate = [
     "cpu" => ["id", "user", "system", "idle", "nice", "iowait", "irq", "softirq", "steal", "guest", "guest_nice"],
     "mem" => ["total", "available", "percent", "used", "free", "active", "inactive", "buffers", "cached", "shared", "slab", "zfs_arc"],
     "temp" => ["sensor", "label", "temp"],
+    "netio" => ["nic", "interval", "bytes_sent", "bytes_recv", "packets_sent", "packets_recv"],
 ];
 
 $ret = [];
@@ -80,8 +84,12 @@ foreach ($obj['tables'] as $tbl => $rows) {
             $vals[] = $val;
             if (is_string($val))
                 $types .= "s";
-            else
+            else if (is_int($val))
                 $types .= "i";
+            else if (is_float($val) || is_double($val))
+                $types .= "d";
+            else
+                $types .= "?";
         }
         $r = db_insert($db, $tbl, $ts, $hn, $cols, $types, $vals);
         $rowret[] = $r;

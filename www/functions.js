@@ -173,9 +173,12 @@ function ChartZoomX(data, {
     .call(d3.axisLeft(y).ticks(height / 60, yFormat))
     .call(g => g.select(".domain").attr("display", "none"));
 
+  const clipId = DOM_uid("clip");
+
   let grid = (g, x, y) => g
     .attr("stroke", "currentColor")
     .attr("stroke-opacity", 0.1)
+    .attr("clip-path", clipId)
     /*.call(g => g
       .selectAll(".x")
       .data(x.ticks(width / 80))
@@ -282,8 +285,6 @@ function ChartZoomX(data, {
 
 
   // Clip path
-  const clipId = DOM_uid("clip");
-
   svg.append("clipPath")
       .attr("id", clipId.id)
     .append("rect")

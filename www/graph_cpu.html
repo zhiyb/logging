@@ -1,0 +1,109 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/boo_vector_art.svg">
+<script>
+// https://stackoverflow.com/a/5448595
+function findGetParameter(parameterName) {
+    var result = null,
+        tmp = [];
+    var items = location.search.substr(1).split("&");
+    for (var index = 0; index < items.length; index++) {
+        tmp = items[index].split("=");
+        if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+    }
+    return result;
+}
+var hn = findGetParameter('h');
+if (!hn)
+  hn = "zhiyb-vps";
+var t = findGetParameter('t');
+if (!t)
+  t = "cpu";
+var l = findGetParameter('l');
+if (!l)
+  l = "cpu0";
+</script>
+<script>document.write(`<title>Logging graphs - ${t} - ${hn}</title>`);</script>
+</head>
+<body>
+<h1><script>document.write(hn);</script></h1>
+<h2>CPU</h2>
+<div id="graph_cpu"></div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script type="module">
+import {add_chart, parse_ts} from "./functions.js";
+
+let linkedZoom = [];
+const url = "get.php?h=" + hn + "&t=";
+const id = parseInt(l.replace("cpu", ""));
+if (isNaN(id))
+  id = 0;
+
+$.getJSON(url + "cpu&id=" + id, data => {
+  if (!data.length)
+    return;
+
+  let values = [];
+  for (let obj of data) {
+    let ts = parse_ts(obj.ts);
+
+    for (let key of ["user", "system"]) {
+      values.push({
+        ts: ts,
+        type: key,
+        val: obj.idle === null ? NaN : obj[key],
+      });
+    }
+    values.push({
+      ts: ts,
+      type: "user",
+      val: obj.idle === null ? NaN : obj.user - obj.guest,
+    });
+    values.push({
+      ts: ts,
+      type: "nice",
+      val: obj.idle === null ? NaN : obj.nice - obj.guest_nice,
+    });
+    for (let key of ["system", "irq", "softirq", "iowait", "steal"]) {
+      values.push({
+        ts: ts,
+        type: key,
+        val: obj.idle === null ? NaN : obj[key],
+      });
+    }
+    values.push({
+      ts: ts,
+      type: "guest",
+      val: obj.idle === null ? NaN : obj.guest + obj.guest_nice,
+    });
+    /*values.push({
+      ts: ts,
+      type: "idle",
+      val: obj.idle === null ? NaN : obj.idle,
+    });*/
+  }
+
+  add_chart($('#graph_cpu'), values, {
+    x: d => d.ts,
+    y: d => d.val,
+    z: d => d.type,
+    yLabel: "↑ %",
+    //yDomain: [0, 100],
+    stacked: true,
+    width: 1024,
+    height: 500,
+    //curve: d3.curveMonotoneX,
+    //mixBlendMode: "normal",
+    linkedZoom: linkedZoom,
+  });
+});
+
+</script>
+</body>
+</html>

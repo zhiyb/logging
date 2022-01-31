@@ -371,7 +371,7 @@ function ChartZoomX(data, {
       if (stacked)
         regY = series[series.length-1].filter(I => !isNaN(I[1]) && minX <= X[I.i] && maxX >= X[I.i]).map(([, y2]) => y2);
       else
-        regY = data.filter(d => !isNaN(y(d)) && minX <= x(d) && x(d) <= maxX).map(y);
+        regY = I.filter(i => D[i] && minX <= X[i] && X[i] <= maxX).map(i => Y[i]);
       const maxY = d3.max(regY);
       if (maxY !== undefined) {
         const minY = d3.min(regY);

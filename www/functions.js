@@ -358,8 +358,8 @@ function ChartZoomX(data, {
     .extent([[marginLeft, 0], [width - marginRight, height]])
     .translateExtent([[marginLeft, -Infinity], [width - marginRight, Infinity]])
     .on("zoom", zoomed);
-  let zoomCnt = 0;
 
+  let zoomCnt = 0;
   function zoomed({transform}) {
     zx = transform.rescaleX(xScale).interpolate(d3.interpolateRound);
     //zy = transform.rescaleY(yScale).interpolate(d3.interpolateRound);
@@ -367,12 +367,15 @@ function ChartZoomX(data, {
     const minX = zx.invert(marginLeft);
     const maxX = zx.invert(width - marginRight);
     if (yDomainAuto) {
-      let regY = undefined;
-      if (stacked)
-        regY = series[series.length-1].filter(I => D[I.i] && minX <= X[I.i] && maxX >= X[I.i]).map(([, y2]) => y2);
-      else
-        regY = I.filter(i => D[i] && minX <= X[i] && X[i] <= maxX).map(i => Y[i]);
-      const extY = d3.extent(regY);
+      let extY;
+      if (stacked) {
+        const regMaxY = series[series.length-1].filter(I => D[I.i] && minX <= X[I.i] && maxX >= X[I.i]).map(([, y2]) => y2);
+        const regMinY = series[0].filter(I => D[I.i] && minX <= X[I.i] && maxX >= X[I.i]).map(([, y2]) => y2);
+        extY = [d3.min(regMinY), d3.max(regMaxY)];
+      } else {
+        const regY = I.filter(i => D[i] && minX <= X[i] && X[i] <= maxX).map(i => Y[i]);
+        extY = d3.extent(regY);
+      }
       if (extY[0] !== undefined) {
         zy = yType(extY, yRange);
         gy.call(yAxis, zy);

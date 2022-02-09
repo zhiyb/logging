@@ -185,42 +185,7 @@ function ChartZoomX(data, {
   let zx = xScale;
   let zy = yScale;
 
-  let xAxis = (g, x) => g
-    .attr("transform", `translate(0,${height - marginBottom})`)
-    .call(d3.axisBottom(x).tickFormat(multiFormat).ticks(width / 80).tickSizeOuter(0))
-    .call(g => g.select(".domain").attr("display", "none"));
-
-  let yAxis = (g, y) => g
-    .attr("transform", `translate(${marginLeft},0)`)
-    .call(d3.axisLeft(y).ticks(height / 60, yFormat))
-    .call(g => g.select(".domain").attr("display", "none"));
-
   const clipId = DOM_uid("clip");
-
-  let grid = (g, x, y) => g
-    .attr("stroke", "currentColor")
-    .attr("stroke-opacity", 0.1)
-    .attr("clip-path", clipId)
-    /*.call(g => g
-      .selectAll(".x")
-      .data(x.ticks(width / 80))
-      .join(
-        enter => enter.append("line").attr("class", "x").attr("y2", height),
-        update => update,
-        exit => exit.remove()
-      )
-      .attr("x1", d => 0.5 + x(d))
-      .attr("x2", d => 0.5 + x(d)))*/ // x-tick grid
-    .call(g => g
-      .selectAll(".y")
-      .data(y.ticks(height / 60))
-      .join(
-        enter => enter.append("line").attr("class", "y").attr("x2", width),
-        update => update,
-        exit => exit.remove()
-      )
-      .attr("y1", d => 0.5 + y(d))
-      .attr("y2", d => 0.5 + y(d)));
 
   // Compute titles.
   const T = title === undefined ? Z : title === null ? null : d3.map(data, title);
@@ -270,17 +235,55 @@ function ChartZoomX(data, {
       .on("pointermove", pointermoved)
       .on("pointerleave", pointerleft);
 
-  const gx = svg.append("g");
+  let xAxis = (g, xs) => g
+    .call(d3.axisBottom(xs).tickFormat(multiFormat).ticks(width / 80).tickSizeOuter(0));
 
-  const gy = svg.append("g");
-  gy.call(g => g.append("text")
+  const gx = svg.append("g");
+  gx.attr("transform", `translate(0,${height - marginBottom})`)
+    .call(xAxis, xScale)
+    .call(g => g.select(".domain").attr("display", "none"));
+
+  let yAxis = (g, ys) => g
+    .call(d3.axisLeft(ys).ticks(height / 60, yFormat));
+
+  const gy = svg.append("g")
+  gy.attr("transform", `translate(${marginLeft},0)`)
+    .call(g => g.append("text")
     .attr("x", -marginLeft)
     .attr("y", 10)
     .attr("fill", "currentColor")
     .attr("text-anchor", "start")
-    .text(yLabel));
+    .text(yLabel))
+    .call(yAxis, yScale)
+    .call(g => g.select(".domain").attr("display", "none"));
 
-  const gGrid = svg.append("g");
+  let grid = (g, xs, ys) => g
+    /*.call(g => g
+      .selectAll(".x")
+      .data(xs.ticks(width / 80))
+      .join(
+        enter => enter.append("line").attr("class", "x").attr("y2", height),
+        update => update,
+        exit => exit.remove()
+      )
+      .attr("x1", d => 0.5 + xs(d))
+      .attr("x2", d => 0.5 + xs(d)))*/ // x-tick grid
+    .call(g => g
+      .selectAll(".y")
+      .data(ys.ticks(height / 60))
+      .join(
+        enter => enter.append("line").attr("class", "y").attr("x2", width),
+        update => update,
+        exit => exit.remove()
+      )
+      .attr("y1", d => 0.5 + ys(d))
+      .attr("y2", d => 0.5 + ys(d)));
+
+  const gGrid = svg.append("g")
+    .attr("stroke", "currentColor")
+    .attr("stroke-opacity", 0.1)
+    .attr("clip-path", clipId)
+    .call(grid, xScale, yScale);
 
   let path = undefined;
   if (stacked) {
@@ -408,10 +411,6 @@ function ChartZoomX(data, {
   }
 
   svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
-  if (!yDomainAuto) { // Initialisation necessary
-    gy.call(yAxis, zy);
-    gGrid.call(grid, zx, zy);
-  }
 
   linkedZoom.push(zoomTo);
 

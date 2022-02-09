@@ -24,7 +24,6 @@ Id.prototype.toString = function() {
 function Swatches(color, {
   columns = null,
   format,
-  links,
   unknown: formatUnknown,
   swatchSize = 15,
   swatchWidth = swatchSize,
@@ -65,8 +64,8 @@ function Swatches(color, {
 }
 
   </style>
-  <div style=${{width: "100%", columns}}>${domain.map(value => {
-    const label = `${format(value)}`;
+  <div style=${{width: "100%", columns}}>${domain.map((value, i) => {
+    const label = `${format(value, i)}`;
     return htl.html`<div class=${id}-item>
       <div class=${id}-swatch style=${{background: color(value)}}></div>
       <div class=${id}-label title=${label}>${label}</div>
@@ -93,9 +92,7 @@ function Swatches(color, {
 }
 
   </style>
-  <div>${domain.map(value => links ? htl.html`<a href="${links[value]}" style="color:inherit;">
-  <span class="${id}" style="--color: ${color(value)}">${format(value)}</span></a>` :
-  htl.html`<span class="${id}" style="--color: ${color(value)}">${format(value)}</span>`)}</div>`;
+  <div>${domain.map((value, i) => htl.html`<span class="${id}" style="--color: ${color(value)}">${format(value, i)}</span>`)}</div>`;
 }
 
 const formatMillisecond = d3.timeFormat(".%L"),
@@ -146,7 +143,8 @@ function ChartZoomX(data, {
   yLabel, // a label for the y-axis
   zDomain, // array of z-values
   lineHover = false,  // select line when hovering above
-  colors = d3.interpolateRainbow, // array of colors for z
+  colors = "auto", // array of colors for z
+  dashed = false, // dashed lines for every second line
   strokeLinecap, // stroke line cap of line
   strokeLinejoin, // stroke line join of line
   strokeWidth = 1.5, // stroke width of line
@@ -169,9 +167,34 @@ function ChartZoomX(data, {
   if (zDomain === undefined) zDomain = Z;
   zDomain = new d3.InternSet(zDomain);
 
-  //const color = d3.scaleSequential(zDomain, d3.interpolateRainbow).unknown("none");
-  const color = d3.scaleOrdinal(zDomain, d3.schemeTableau10);
-  //console.log(color);
+  if (colors === 'auto') {
+    // https://stackoverflow.com/a/20298027
+    const C = [
+      "#000000", "#00FF00", "#0000FF", "#FF0000", "#01FFFE", "#FFA6FE", "#FFDB66", "#006401",
+      "#010067", "#95003A", "#007DB5", "#FF00F6", /*"#FFEEE8",*/ "#774D00", "#90FB92", "#0076FF",
+      "#D5FF00", "#FF937E", "#6A826C", "#FF029D", "#FE8900", "#7A4782", "#7E2DD2", "#85A900",
+      "#FF0056", "#A42400", "#00AE7E", "#683D3B", "#BDC6FF", "#263400", "#BDD393", "#00B917",
+      "#9E008E", "#001544", "#C28C9F", "#FF74A3", "#01D0FF", "#004754", "#E56FFE", "#788231",
+      "#0E4CA1", "#91D0CB", "#BE9970", "#968AE8", "#BB8800", "#43002C", "#DEFF74", "#00FFC6",
+      "#FFE502", "#620E00", "#008F9C", "#98FF52", "#7544B1", "#B500FF", "#00FF78", "#FF6E41",
+      "#005F39", "#6B6882", "#5FAD4E", "#A75740", "#A5FFD2", "#FFB167", "#009BFF", "#E85EBE",
+    ]
+
+    const s = dashed ? (zDomain.size + 1) / 2 : zDomain.size;
+    if (s <= d3.schemeTableau10.length)
+      colors = d3.schemeTableau10;
+    else if (s <= C.length)
+      colors = C;
+    else
+      colors = d3.interpolateSinebow;
+    if (dashed && typeof colors === 'object')
+      colors = colors.flatMap(c => [c, c]);
+  }
+
+  if (typeof colors === 'function')
+    //colors = d3.map(zDomain, (z, i, a) => colors(Math.random()));
+    colors = d3.map(zDomain, (z, i, a) => colors(i / a.size));
+  const color = d3.scaleOrdinal(zDomain, colors);
 
   // Omit any data not present in the z-domain.
   const I = d3.range(X.length).filter(i => zDomain.has(Z[i]));
@@ -296,7 +319,6 @@ function ChartZoomX(data, {
   } else {
     path = svg.append("g")
         .attr("fill", "none")
-        .attr("stroke", typeof color === "string" ? color : null)
         .attr("stroke-linecap", strokeLinecap)
         .attr("stroke-linejoin", strokeLinejoin)
         .attr("stroke-width", strokeWidth)
@@ -306,6 +328,8 @@ function ChartZoomX(data, {
       .join("path")
         .style("mix-blend-mode", mixBlendMode)
         .attr("stroke", typeof color === "function" ? ([z]) => color(z) : null);
+    if (dashed)
+      path.attr("stroke-dasharray", (z, i) => i % 2 ? ("2, 2") : null);
   }
 
 
@@ -428,13 +452,17 @@ function parse_ts(ts) {
 
 function add_chart(e, values, opts, baseUrl = null) {
   const chart = ChartZoomX(values, opts);
-  let links = null;
-  if (baseUrl !== null) {
-    links = {};
-    for (let d of chart.scales.color.domain())
-      links[d] = baseUrl + d;
+  let format = opts.format;
+  if (format === undefined) {
+    let formatDash = (v, i) => v;
+    if (opts.dashed)
+      formatDash = (v, i) => (i % 2 ? "⋯ " : "") + v;
+    let formatLink = formatDash;
+    if (baseUrl !== null)
+      formatLink = (v, i) => htl.html`<a href="${baseUrl + v}" style="color:inherit;">${formatDash(v, i)}</a>`;
+    format = formatLink;
   }
-  e.append(Swatches(chart.scales.color, {links: links}));
+  e.append(Swatches(chart.scales.color, {format: format}));
   e.append(chart);
 }
 

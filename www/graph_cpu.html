@@ -27,11 +27,11 @@ var l = findGetParameter('l');
 if (!l)
   l = "cpu0";
 </script>
-<script>document.write(`<title>Logging graphs - ${t} - ${hn}</title>`);</script>
+<script>document.write(`<title>Logging graphs - ${l} - ${hn}</title>`);</script>
 </head>
 <body>
 <h1><script>document.write(hn);</script></h1>
-<h2>CPU</h2>
+<h2><script>document.write(l);</script></h2>
 <div id="graph_cpu"></div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>

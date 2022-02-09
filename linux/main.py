@@ -84,7 +84,11 @@ while True:
                 d |= {"temp": temp.current}
             db_insert(db, "temp", d)
 
+    netif = psutil.net_if_stats()
     v = psutil.net_io_counters(pernic=True, nowrap=True)
+    for key, val in netif.items():
+        if not val.isup:
+            del v[key]
     for key, val in v.items():
         d = {"ts": ts, "hostname": hn, "nic": key}
         if not first and key in nics:

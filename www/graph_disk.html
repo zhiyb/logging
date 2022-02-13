@@ -26,7 +26,7 @@ if (!t)
 var l = findGetParameter('l');
 if (!l)
   l = "sda";
-if (l.endsWith("_w") || l.endsWith("_r"))
+if (l.toLowerCase().endsWith("_w") || l.toLowerCase().endsWith("_r"))
   l = l.slice(0, -2);
 </script>
 <script>document.write(`<title>Logging graphs - ${t} - ${l} - ${hn}</title>`);</script>

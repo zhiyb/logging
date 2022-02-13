@@ -91,10 +91,20 @@ $.getJSON(url + "mem", data => {
     values.push({
       ts: ts,
       type: "used",
-      val: obj.total === null ? NaN : (obj.total - obj.buffers - obj.cached - obj.zfs_arc - obj.free) / 1024 / 1024 / 1024,
+      val: obj.total === null ? NaN : obj.used / 1024 / 1024 / 1024,
+    });
+    values.push({
+      ts: ts,
+      type: "others",
+      val: obj.total === null ? NaN : (obj.total - obj.available - obj.used) / 1024 / 1024 / 1024,
+    });
+    values.push({
+      ts: ts,
+      type: "available",
+      val: obj.total === null ? NaN : (obj.available - obj.free) / 1024 / 1024 / 1024,
     });
     // "total", "available", "percent", "used", "free", "active", "inactive", "buffers", "cached", "shared", "slab"
-    for (let key of ["buffers", "cached", "zfs_arc", "free"]) {
+    for (let key of ["free"]) {
       values.push({
         ts: ts,
         type: key,
@@ -112,7 +122,7 @@ $.getJSON(url + "mem", data => {
     yDomain: [0, total],
     width: 1024,
     height: 500,
-    colors: [cmn.schemeTableau10[3], cmn.schemeTableau10[1], cmn.schemeTableau10[0], cmn.schemeTableau10[9], cmn.schemeTableau10[2]],
+    colors: [cmn.schemeTableau10[3], cmn.schemeTableau10[1], cmn.schemeTableau10[0], cmn.schemeTableau10[2]],
     linkedZoom: linkedZoom,
   });
 });
@@ -133,15 +143,17 @@ $.getJSON(url + "netio", data => {
   for (let obj of data) {
     if (!vmap.has(obj.nic))
       continue;
+    if (obj.nic.startsWith("Loopback"))
+      continue;
     let ts = cmn.parse_ts(obj.ts);
     values.push({
       ts: ts,
-      type: obj.nic + "_tx",
+      type: obj.nic + "_TX",
       val: obj.interval === null ? NaN : obj.bytes_sent * 8 / obj.interval / 1024 / 1024,
     });
     values.push({
       ts: ts,
-      type: obj.nic + "_rx",
+      type: obj.nic + "_RX",
       val: obj.interval === null ? NaN : obj.bytes_recv * 8 / obj.interval / 1024 / 1024,
     });
   }
@@ -175,20 +187,18 @@ $.getJSON(url + "disk", data => {
     return;
 
   let values = [];
-  for (let obj of data) {
+  for (const obj of data) {
     if (!vmap.has(obj.disk))
-      continue;
-    if (obj.disk.startsWith("dm-") || obj.disk.startsWith("loop"))
       continue;
     let ts = cmn.parse_ts(obj.ts);
     values.push({
       ts: ts,
-      type: obj.disk + "_w",
+      type: obj.disk + "_W",
       val: obj.interval === null ? NaN : obj.write_bytes / obj.interval / 1024 / 1024,
     });
     values.push({
       ts: ts,
-      type: obj.disk + "_r",
+      type: obj.disk + "_R",
       val: obj.interval === null ? NaN : obj.read_bytes / obj.interval / 1024 / 1024,
     });
   }

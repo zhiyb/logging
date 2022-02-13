@@ -7,6 +7,7 @@ import traceback
 from urllib import request, parse
 
 url = "https://zhiyb.me/logging/record.php"
+#url = "http://nas/logging/www/record.php"
 interval = 30
 
 
@@ -37,6 +38,7 @@ def db_commit(url, db, ts, hn):
 
 first = True    # Insert NULL values to show discontinuity
 nics = {}
+disks = {}
 pdt = datetime.datetime.utcnow()
 while True:
     dt = datetime.datetime.utcnow()
@@ -98,6 +100,26 @@ while True:
                     "packets_sent": val.packets_sent - prv.packets_sent, "packets_recv": val.packets_recv - prv.packets_recv}
         db_insert(db, "netio", d)
     nics = v
+
+    v = psutil.disk_io_counters(perdisk=True, nowrap=True)
+    # Only report whole disks
+    par = []
+    for key in v.keys():
+        for k in v.keys():
+            if not k[-1].isdigit() and key != k and key.startswith(k):
+                par.append(key)
+                break
+    for p in par:
+        del v[p]
+    for key, val in v.items():
+        d = {"ts": ts, "hostname": hn, "disk": key}
+        if not first and key in disks:
+            prv = disks[key]
+            d |= {  "interval": dsec,
+                    "write_bytes": val.write_bytes - prv.write_bytes, "read_bytes": val.read_bytes - prv.read_bytes,
+                    "write_time": val.write_time - prv.write_time, "read_time": val.read_time - prv.read_time}
+        db_insert(db, "disk", d)
+    disks = v
 
     # Signal discontinuity again if update failed
     first = not db_commit(url, db, ts, hn)

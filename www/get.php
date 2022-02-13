@@ -23,7 +23,7 @@ $tbl = $_GET['t'];
 if (empty($tbl))
     error(400, "Table is empty");
 
-if (!in_array($tbl, array("cpu", "mem", "temp", "netio")))
+if (!in_array($tbl, array("cpu", "mem", "temp", "netio", "disk")))
     error(400, "Table is invalid");
 
 $db = new mysqli($dbhost, $dbuser, $dbpw, $dbname);

@@ -31,6 +31,8 @@ if (!hn)
 <div id="graph_mem"></div>
 <h2>Network IO</h2>
 <div id="graph_netio"></div>
+<h2>Disk IO</h2>
+<div id="graph_disk"></div>
 <h2>Temperature</h2>
 <div id="graph_temp"></div>
 
@@ -140,6 +142,41 @@ $.getJSON(url + "netio", data => {
     y: d => d.val,
     z: d => d.type,
     yLabel: "↑ Mbps",
+    dashed: true,
+    width: 1024,
+    height: 500,
+    //curve: d3.curveMonotoneX,
+    mixBlendMode: "normal",
+    linkedZoom: linkedZoom,
+  });
+});
+
+$.getJSON(url + "disk", data => {
+  if (!data.length)
+    return;
+
+  let values = [];
+  for (let obj of data) {
+    if (obj.disk.startsWith("dm-"))
+      continue;
+    let ts = parse_ts(obj.ts);
+    values.push({
+      ts: ts,
+      type: obj.disk + "_w",
+      val: obj.interval === null ? NaN : obj.write_bytes / obj.interval / 1024 / 1024,
+    });
+    values.push({
+      ts: ts,
+      type: obj.disk + "_r",
+      val: obj.interval === null ? NaN : obj.read_bytes / obj.interval / 1024 / 1024,
+    });
+  }
+
+  add_chart($('#graph_disk'), values, {
+    x: d => d.ts,
+    y: d => d.val,
+    z: d => d.type,
+    yLabel: "↑ MB/s",
     dashed: true,
     width: 1024,
     height: 500,

@@ -17,6 +17,21 @@ Id.prototype.toString = function() {
   return "url(" + this.href + ")";
 };
 
+// https://public.tableau.com/views/TableauColors/ColorPaletteswithRGBValues
+const schemeTableau10 = [
+  "#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#9467BD", "#8C564B", "#E377C2", "#7F7F7F", "#BCBD22", "#17BECF"
+];
+const schemeTableau10Light = [
+  "#AEC7E8", "#FFBB78", "#98DF8A", "#FF9896", "#C5B0D5", "#C49C94", "#F7B6D2", "#C7C7C7", "#DBDB8D", "#9EDAE5"
+];
+const schemeTableau10Medium = [
+  "#729ECE", "#FF9E4A", "#67BF5C", "#ED665D", "#AD8BC9", "#A8786E", "#ED97CA", "#A2A2A2", "#CDCC5D", "#6DCCDA"
+];
+// Tableau 10 + Light
+const schemeTableau20 = [
+  "#1F77B4", "#AEC7E8", "#FF7F0E", "#FFBB78", "#2CA02C", "#98DF8A", "#D62728", "#FF9896", "#9467BD", "#C5B0D5",
+  "#8C564B", "#C49C94", "#E377C2", "#F7B6D2", "#7F7F7F", "#C7C7C7", "#BCBD22", "#DBDB8D", "#17BECF", "#9EDAE5",
+];
 
 // Copyright 2021, Observable Inc.
 // Released under the ISC license.
@@ -183,6 +198,8 @@ function ChartZoomX(data, {
     const s = dashed ? (zDomain.size + 1) / 2 : zDomain.size;
     if (s <= d3.schemeTableau10.length)
       colors = d3.schemeTableau10;
+    else if (s <= schemeTableau20.length)
+      colors = schemeTableau20;
     else if (s <= C.length)
       colors = C;
     else
@@ -466,4 +483,7 @@ function add_chart(e, values, opts, baseUrl = null) {
   e.append(chart);
 }
 
-export {add_chart, parse_ts};
+export {
+  add_chart, parse_ts,
+  schemeTableau10, schemeTableau10Light, schemeTableau10Medium, schemeTableau20
+};

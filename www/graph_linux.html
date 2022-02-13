@@ -39,7 +39,7 @@ if (!hn)
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 
 <script type="module">
-import {add_chart, parse_ts} from "./functions.js";
+import * as cmn from "./functions.js";
 
 let linkedZoom = [];
 let url = "get.php?h=" + hn + "&t=";
@@ -54,7 +54,7 @@ $.getJSON(url + "cpu", data => {
     if (obj.id > maxcpu)
       maxcpu = obj.id;
 
-    let ts = parse_ts(obj.ts);
+    let ts = cmn.parse_ts(obj.ts);
 
     values.push({
       ts: ts,
@@ -64,7 +64,7 @@ $.getJSON(url + "cpu", data => {
   }
 
   const baseUrl = "graph_cpu.html?h=" + hn + "&t=cpu&l=";
-  add_chart($('#graph_cpu'), values, {
+  cmn.add_chart($('#graph_cpu'), values, {
     x: d => d.ts,
     y: d => d.val,
     z: d => d.type,
@@ -85,7 +85,7 @@ $.getJSON(url + "mem", data => {
   let values = [];
   let total = 0;
   for (let obj of data) {
-    let ts = parse_ts(obj.ts);
+    let ts = cmn.parse_ts(obj.ts);
     total = obj.total / 1024 / 1024 / 1024;
 
     values.push({
@@ -103,7 +103,7 @@ $.getJSON(url + "mem", data => {
     }
   }
 
-  add_chart($('#graph_mem'), values, {
+  cmn.add_chart($('#graph_mem'), values, {
     x: d => d.ts,
     y: d => d.val,
     z: d => d.type,
@@ -112,6 +112,7 @@ $.getJSON(url + "mem", data => {
     yDomain: [0, total],
     width: 1024,
     height: 500,
+    colors: [cmn.schemeTableau10[3], cmn.schemeTableau10[1], cmn.schemeTableau10[0], cmn.schemeTableau10[9], cmn.schemeTableau10[2]],
     linkedZoom: linkedZoom,
   });
 });
@@ -124,7 +125,7 @@ $.getJSON(url + "netio", data => {
   for (let obj of data) {
     if (obj.nic === "lo")
       continue;
-    let ts = parse_ts(obj.ts);
+    let ts = cmn.parse_ts(obj.ts);
     values.push({
       ts: ts,
       type: obj.nic + "_tx",
@@ -138,15 +139,16 @@ $.getJSON(url + "netio", data => {
   }
 
   const baseUrl = "graph_netio.html?h=" + hn + "&t=netio&l=";
-  add_chart($('#graph_netio'), values, {
+  cmn.add_chart($('#graph_netio'), values, {
     x: d => d.ts,
     y: d => d.val,
     z: d => d.type,
     yLabel: "↑ Mbps",
-    dashed: true,
+    //dashed: true,
     width: 1024,
     height: 500,
     //curve: d3.curveMonotoneX,
+    colors: cmn.schemeTableau20,
     mixBlendMode: "normal",
     linkedZoom: linkedZoom,
   }, baseUrl);
@@ -160,7 +162,7 @@ $.getJSON(url + "disk", data => {
   for (let obj of data) {
     if (obj.disk.startsWith("dm-") || obj.disk.startsWith("loop"))
       continue;
-    let ts = parse_ts(obj.ts);
+    let ts = cmn.parse_ts(obj.ts);
     values.push({
       ts: ts,
       type: obj.disk + "_w",
@@ -174,15 +176,16 @@ $.getJSON(url + "disk", data => {
   }
 
   const baseUrl = "graph_disk.html?h=" + hn + "&t=disk&l=";
-  add_chart($('#graph_disk'), values, {
+  cmn.add_chart($('#graph_disk'), values, {
     x: d => d.ts,
     y: d => d.val,
     z: d => d.type,
     yLabel: "↑ MB/s",
-    dashed: true,
+    //dashed: true,
     width: 1024,
     height: 500,
     //curve: d3.curveMonotoneX,
+    colors: cmn.schemeTableau20,
     mixBlendMode: "normal",
     linkedZoom: linkedZoom,
   }, baseUrl);
@@ -194,7 +197,7 @@ $.getJSON(url + "temp", data => {
 
   let values = [];
   for (let obj of data) {
-    let ts = parse_ts(obj.ts);
+    let ts = cmn.parse_ts(obj.ts);
     values.push({
       ts: ts,
       type: obj.label !== "" ? obj.label : obj.sensor,
@@ -202,7 +205,7 @@ $.getJSON(url + "temp", data => {
     });
   }
 
-  add_chart($('#graph_temp'), values, {
+  cmn.add_chart($('#graph_temp'), values, {
     x: d => d.ts,
     y: d => d.val,
     z: d => d.type,

@@ -39,7 +39,7 @@ if (l.endsWith("_tx") || l.endsWith("_rx"))
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 
 <script type="module">
-import {add_chart, parse_ts} from "./functions.js";
+import * as cmn from "./functions.js";
 
 let linkedZoom = [];
 
@@ -49,7 +49,7 @@ $.getJSON("get.php?h=" + hn + "&t=" + t + "&nic=" + l, data => {
 
   let values = [];
   for (let obj of data) {
-    let ts = parse_ts(obj.ts);
+    let ts = cmn.parse_ts(obj.ts);
 
     values.push({
       ts: ts,
@@ -63,7 +63,7 @@ $.getJSON("get.php?h=" + hn + "&t=" + t + "&nic=" + l, data => {
     });
   }
 
-  add_chart($('#graph_netio'), values, {
+  cmn.add_chart($('#graph_netio'), values, {
     x: d => d.ts,
     y: d => d.val,
     z: d => d.type,
@@ -72,7 +72,7 @@ $.getJSON("get.php?h=" + hn + "&t=" + t + "&nic=" + l, data => {
     width: 1024,
     height: 500,
     //curve: d3.curveMonotoneX,
-    colors: ["#e15759", "#4e79a7"],
+    colors: [cmn.schemeTableau10[3], cmn.schemeTableau10[0]],
     mixBlendMode: "normal",
     linkedZoom: linkedZoom,
   });

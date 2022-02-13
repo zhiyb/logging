@@ -59,6 +59,7 @@ $validate = [
     "mem" => ["total", "available", "percent", "used", "free", "active", "inactive", "buffers", "cached", "shared", "slab", "zfs_arc"],
     "temp" => ["sensor", "label", "temp"],
     "netio" => ["nic", "interval", "bytes_sent", "bytes_recv", "packets_sent", "packets_recv"],
+    "disk" => ["disk", "interval", "write_bytes", "read_bytes", "write_time", "read_time"],
 ];
 
 $ret = [];

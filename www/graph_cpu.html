@@ -27,11 +27,11 @@ var l = findGetParameter('l');
 if (!l)
   l = "cpu0";
 </script>
-<script>document.write(`<title>Logging graphs - ${l} - ${hn}</title>`);</script>
+<script>document.write(`<title>Logging graphs - ${t} - ${l} - ${hn}</title>`);</script>
 </head>
 <body>
 <h1><script>document.write(hn);</script></h1>
-<h2><script>document.write(l);</script></h2>
+<h2><script>document.write(t + " - " + l);</script></h2>
 <div id="graph_cpu"></div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
@@ -40,12 +40,11 @@ if (!l)
 import {add_chart, parse_ts} from "./functions.js";
 
 let linkedZoom = [];
-const url = "get.php?h=" + hn + "&t=";
 const id = parseInt(l.replace("cpu", ""));
 if (isNaN(id))
   id = 0;
 
-$.getJSON(url + "cpu&id=" + id, data => {
+$.getJSON("get.php?h=" + hn + "&t=" + t + "&id=" + id, data => {
   if (!data.length)
     return;
 
@@ -100,7 +99,7 @@ $.getJSON(url + "cpu&id=" + id, data => {
     height: 500,
     //curve: d3.curveMonotoneX,
     //mixBlendMode: "normal",
-    linkedZoom: linkedZoom,
+    //linkedZoom: linkedZoom,
   });
 });
 

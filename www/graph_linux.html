@@ -137,6 +137,7 @@ $.getJSON(url + "netio", data => {
     });
   }
 
+  const baseUrl = "graph_netio.html?h=" + hn + "&t=netio&l=";
   add_chart($('#graph_netio'), values, {
     x: d => d.ts,
     y: d => d.val,
@@ -148,7 +149,7 @@ $.getJSON(url + "netio", data => {
     //curve: d3.curveMonotoneX,
     mixBlendMode: "normal",
     linkedZoom: linkedZoom,
-  });
+  }, baseUrl);
 });
 
 $.getJSON(url + "disk", data => {

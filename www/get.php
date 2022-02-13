@@ -61,6 +61,17 @@ if ($tbl == "cpu") {
         $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ? AND `disk` = ?' . $tslimit);
         $stmt->bind_param('ss', $hn, $disk);
     }
+
+} else if ($tbl == "netio") {
+    $nic = null;
+    if (array_key_exists('nic', $_GET))
+        $nic = $_GET['nic'];
+
+    if ($nic) {
+        // Special case, details for specific nic
+        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ? AND `nic` = ?' . $tslimit);
+        $stmt->bind_param('ss', $hn, $nic);
+    }
 }
 
 $stmt->execute();

@@ -50,6 +50,17 @@ if ($tbl == "cpu") {
         $stmt = $db->prepare('SELECT `ts`, `id`, `idle` FROM `' . $tbl . '` WHERE `hostname` = ?' . $tslimit);
         $stmt->bind_param('s', $hn);
     }
+
+} else if ($tbl == "disk") {
+    $disk = null;
+    if (array_key_exists('disk', $_GET))
+        $disk = $_GET['disk'];
+
+    if ($disk) {
+        // Special case, details for specific disk
+        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ? AND `disk` = ?' . $tslimit);
+        $stmt->bind_param('ss', $hn, $disk);
+    }
 }
 
 $stmt->execute();

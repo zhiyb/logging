@@ -1,0 +1,83 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/boo_vector_art.svg">
+<script>
+// https://stackoverflow.com/a/5448595
+function findGetParameter(parameterName) {
+    var result = null,
+        tmp = [];
+    var items = location.search.substr(1).split("&");
+    for (var index = 0; index < items.length; index++) {
+        tmp = items[index].split("=");
+        if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+    }
+    return result;
+}
+var hn = findGetParameter('h');
+if (!hn)
+  hn = "zhiyb-vps";
+var t = findGetParameter('t');
+if (!t)
+  t = "disk";
+var l = findGetParameter('l');
+if (!l)
+  l = "sda";
+if (l.endsWith("_w") || l.endsWith("_r"))
+  l = l.slice(0, -2);
+</script>
+<script>document.write(`<title>Logging graphs - ${t} - ${l} - ${hn}</title>`);</script>
+</head>
+<body>
+<h1><script>document.write(hn);</script></h1>
+<h2><script>document.write(t + " - " + l);</script></h2>
+<div id="graph_disk"></div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script type="module">
+import {add_chart, parse_ts} from "./functions.js";
+
+let linkedZoom = [];
+
+$.getJSON("get.php?h=" + hn + "&t=" + t + "&disk=" + l, data => {
+  if (!data.length)
+    return;
+
+  let values = [];
+  for (let obj of data) {
+    let ts = parse_ts(obj.ts);
+
+    values.push({
+      ts: ts,
+      type: "write",
+      val: obj.interval === null ? NaN : obj.write_bytes / obj.interval / 1024 / 1024,
+    });
+    values.push({
+      ts: ts,
+      type: "read",
+      val: obj.interval === null ? NaN : obj.read_bytes / obj.interval / 1024 / 1024,
+    });
+  }
+
+  add_chart($('#graph_disk'), values, {
+    x: d => d.ts,
+    y: d => d.val,
+    z: d => d.type,
+    yLabel: "↑ MB/s",
+    //dashed: true,
+    width: 1024,
+    height: 500,
+    //curve: d3.curveMonotoneX,
+    colors: ["#e15759", "#4e79a7"],
+    mixBlendMode: "normal",
+    linkedZoom: linkedZoom,
+  });
+});
+
+</script>
+</body>
+</html>

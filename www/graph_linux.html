@@ -157,7 +157,7 @@ $.getJSON(url + "disk", data => {
 
   let values = [];
   for (let obj of data) {
-    if (obj.disk.startsWith("dm-"))
+    if (obj.disk.startsWith("dm-") || obj.disk.startsWith("loop"))
       continue;
     let ts = parse_ts(obj.ts);
     values.push({
@@ -172,6 +172,7 @@ $.getJSON(url + "disk", data => {
     });
   }
 
+  const baseUrl = "graph_disk.html?h=" + hn + "&t=disk&l=";
   add_chart($('#graph_disk'), values, {
     x: d => d.ts,
     y: d => d.val,
@@ -183,7 +184,7 @@ $.getJSON(url + "disk", data => {
     //curve: d3.curveMonotoneX,
     mixBlendMode: "normal",
     linkedZoom: linkedZoom,
-  });
+  }, baseUrl);
 });
 
 $.getJSON(url + "temp", data => {

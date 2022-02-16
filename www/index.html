@@ -18,10 +18,10 @@ xmlHttp.onreadystatechange = function() {
     const hosts = JSON.parse(xmlHttp.responseText);
     const div = document.getElementById('hosts');
     for (const [k, v] of Object.entries(hosts)) {
-      div.innerHTML += `<h1>${v.desc}</h1>`;
-      for (const h of v.hosts) {
-        div.innerHTML += `<a href="graph_${k}.html?h=${h}">${h}</a><br/>`;
-      }
+      let html = "";
+      for (const h of v.hosts)
+        html += `<a href="graph_${k}.html?h=${h}">${h}</a><br/>`;
+      div.innerHTML += `<h2>${v.desc}</h2><pre style="font-size:150%">${html}</pre>`;
     }
   }
 }

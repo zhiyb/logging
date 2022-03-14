@@ -48,11 +48,11 @@ while True:
     for i, s in enumerate(psutil.cpu_times_percent(percpu=True)):
         d = {"ts": ts, "hostname": hn, "id": i}
         if not first:
-            d |= {
+            d.update({
                 "user": s.user, "system": s.system, "idle": s.idle, "nice": s.nice,
                 "iowait": s.iowait, "irq": s.irq, "softirq": s.softirq,
                 "steal": s.steal, "guest": s.guest, "guest_nice": s.guest_nice,
-            }
+            })
         db_insert(db, "cpu", d)
 
     v = psutil.virtual_memory()
@@ -70,12 +70,15 @@ while True:
         pass
     d = {"ts": ts, "hostname": hn}
     if not first:
-        d |= {
+        slab = 0
+        if "slab" in v:
+            slab = v.slab
+        d.update({
             "total": v.total, "available": v.available, "percent": v.percent,
             "used": v.used, "free": v.free, "active": v.active, "inactive": v.inactive,
-            "buffers": v.buffers, "cached": v.cached, "shared": v.shared, "slab": v.slab,
+            "buffers": v.buffers, "cached": v.cached, "shared": v.shared, "slab": slab,
             "zfs_arc": zfs_arc,
-        }
+        })
     db_insert(db, "mem", d)
 
     v = psutil.sensors_temperatures()
@@ -83,7 +86,7 @@ while True:
         for temp in val:
             d = {"ts": ts, "hostname": hn, "sensor": key, "label": temp.label}
             if not first:
-                d |= {"temp": temp.current}
+                d.update({"temp": temp.current})
             db_insert(db, "temp", d)
 
     netif = psutil.net_if_stats()
@@ -95,13 +98,16 @@ while True:
         d = {"ts": ts, "hostname": hn, "nic": key}
         if not first and key in nics:
             prv = nics[key]
-            d |= {  "interval": dsec,
-                    "bytes_sent": val.bytes_sent - prv.bytes_sent, "bytes_recv": val.bytes_recv - prv.bytes_recv,
-                    "packets_sent": val.packets_sent - prv.packets_sent, "packets_recv": val.packets_recv - prv.packets_recv}
+            d.update({  "interval": dsec,
+                      "bytes_sent": val.bytes_sent - prv.bytes_sent, "bytes_recv": val.bytes_recv - prv.bytes_recv,
+                    "packets_sent": val.packets_sent - prv.packets_sent, "packets_recv": val.packets_recv - prv.packets_recv})
         db_insert(db, "netio", d)
     nics = v
 
-    v = psutil.disk_io_counters(perdisk=True, nowrap=True)
+    try:
+        v = psutil.disk_io_counters(perdisk=True, nowrap=True)
+    except:
+        v = {}
     # Only report whole disks
     par = []
     for key in v.keys():
@@ -115,9 +121,9 @@ while True:
         d = {"ts": ts, "hostname": hn, "disk": key}
         if not first and key in disks:
             prv = disks[key]
-            d |= {  "interval": dsec,
-                    "write_bytes": val.write_bytes - prv.write_bytes, "read_bytes": val.read_bytes - prv.read_bytes,
-                    "write_time": val.write_time - prv.write_time, "read_time": val.read_time - prv.read_time}
+            d.update({  "interval": dsec,
+                     "write_bytes": val.write_bytes - prv.write_bytes, "read_bytes": val.read_bytes - prv.read_bytes,
+                      "write_time": val.write_time - prv.write_time, "read_time": val.read_time - prv.read_time})
         db_insert(db, "disk", d)
     disks = v
 

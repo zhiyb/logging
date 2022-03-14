@@ -23,7 +23,7 @@ $tbl = $_GET['t'];
 if (empty($tbl))
     error(400, "Table is empty");
 
-if (!in_array($tbl, array("cpu", "mem", "temp", "netio", "disk")))
+if (!in_array($tbl, array("cpu", "mem", "temp", "netio", "disk", "sensors")))
     error(400, "Table is invalid");
 
 $db = new mysqli($dbhost, $dbuser, $dbpw, $dbname);
@@ -71,6 +71,17 @@ if ($tbl == "cpu") {
         // Special case, details for specific nic
         $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ? AND `nic` = ?' . $tslimit);
         $stmt->bind_param('ss', $hn, $nic);
+    }
+
+} else if ($tbl == "sensors") {
+    $type = null;
+    if (array_key_exists('type', $_GET))
+        $type = $_GET['type'];
+
+    if ($type) {
+        // Special case, details for specific sensor type
+        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ? AND `type` = ?' . $tslimit);
+        $stmt->bind_param('ss', $hn, $type);
     }
 }
 

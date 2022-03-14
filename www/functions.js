@@ -145,7 +145,7 @@ function ChartZoomX(data, {
   marginTop = 20, // top margin, in pixels
   marginRight = 30, // right margin, in pixels
   marginBottom = 30, // bottom margin, in pixels
-  marginLeft = 40, // left margin, in pixels
+  marginLeft = 50, // left margin, in pixels
   width = 640, // outer width, in pixels
   height = 400, // outer height, in pixels
   xType = d3.scaleUtc, // type of x-scale
@@ -483,7 +483,22 @@ function add_chart(e, values, opts, baseUrl = null) {
   e.append(chart);
 }
 
+
+
+function get_sensor_unit(type) {
+  const units = {
+    "temperature": "℃",
+    "pressure": "Pa",
+    "humidity": "%",
+    "gas_resistance": "Ω",
+  }
+  const u = units[type];
+  return u === undefined ? "value" : u;
+}
+
+
+
 export {
-  add_chart, parse_ts,
-  schemeTableau10, schemeTableau10Light, schemeTableau10Medium, schemeTableau20
+  add_chart, parse_ts, get_sensor_unit,
+  schemeTableau10, schemeTableau10Light, schemeTableau10Medium, schemeTableau20,
 };

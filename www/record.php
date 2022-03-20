@@ -66,7 +66,7 @@ $obj = $stmt->get_result()->fetch_row();
 if ($obj === false)
 error(500, $stmt->error);
 if ($obj === null)
-error(500, "No host record");
+error(400, "No host record");
 
 $hostid = $obj[0];
 

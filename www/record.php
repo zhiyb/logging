@@ -12,18 +12,14 @@ function error($code, $msg = null) {
 if ($_SERVER["REQUEST_METHOD"] != "POST")
     error(400, "Invalid method");
 
-if (!array_key_exists('h', $_GET))
-    error(400, "Invalid hostname");
 
-$hn = $_GET['h'];
-if (empty($hn))
-    error(400, "Invalid hostname");
-
+// Verbose
 $v = 0;
 if (array_key_exists('v', $_GET))
     $v = $_GET['v'];
 
 
+// Database connection
 $db = new mysqli($dbhost, $dbuser, $dbpw, $dbname);
 if ($db->connect_error)
     error(500, "Connection failed: " . $db->connect_error);
@@ -31,27 +27,46 @@ $db->set_charset('utf8mb4');
 
 
 // Find hostid
-/*
-$stmt = $db->prepare('INSERT IGNORE INTO `hosts` (`hostname`, `hostuuid`, `clientuuid`) VALUES (?, UUID(), UUID())');
-if ($stmt === false)
-    error(500, $db->error);
-$stmt->bind_param('s', $hn);
-if ($stmt->execute() !== true)
-    error(500, $stmt->error);
-*/
+$hostid = null;
+if (array_key_exists('h', $_GET)) {
+    // Legacy hostname specified
+    $hn = $_GET['h'];
+    if (empty($hn))
+        error(400, "Invalid hostname");
 
-$stmt = $db->prepare('SELECT `hostid` FROM `hosts` WHERE `hostname` = ?');
-if ($stmt === false)
-    error(500, $db->error);
-$stmt->bind_param('s', $hn);
+    /*
+    $stmt = $db->prepare('INSERT IGNORE INTO `hosts` (`hostname`, `hostuuid`, `clientuuid`) VALUES (?, UUID(), UUID())');
+    if ($stmt === false)
+        error(500, $db->error);
+    $stmt->bind_param('s', $hn);
+    if ($stmt->execute() !== true)
+        error(500, $stmt->error);
+    */
+
+    $stmt = $db->prepare('SELECT `hostid` FROM `hosts` WHERE `hostname` = ? AND `migerated` = false');
+    $stmt->bind_param('s', $hn);
+
+} else if (array_key_exists('huid', $_GET)) {
+    // Host UUID specified
+    $huid = $_GET['huid'];
+    if (empty($huid))
+        error(400, "Invalid host UUID");
+
+    $stmt = $db->prepare('SELECT `hostid` FROM `hosts` WHERE `hostuuid` = ?');
+    $stmt->bind_param('s', $huid);
+
+} else {
+    error(400, "Invalid host");
+}
+
 if ($stmt->execute() !== true)
-    error(500, $stmt->error);
+error(500, $stmt->error);
 
 $obj = $stmt->get_result()->fetch_row();
 if ($obj === false)
-    error(500, $stmt->error);
+error(500, $stmt->error);
 if ($obj === null)
-    error(500, "No host record");
+error(500, "No host record");
 
 $hostid = $obj[0];
 

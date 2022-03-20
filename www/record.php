@@ -19,6 +19,44 @@ $hn = $_GET['h'];
 if (empty($hn))
     error(400, "Invalid hostname");
 
+$v = 0;
+if (array_key_exists('v', $_GET))
+    $v = $_GET['v'];
+
+
+$db = new mysqli($dbhost, $dbuser, $dbpw, $dbname);
+if ($db->connect_error)
+    error(500, "Connection failed: " . $db->connect_error);
+$db->set_charset('utf8mb4');
+
+
+// Find hostid
+/*
+$stmt = $db->prepare('INSERT IGNORE INTO `hosts` (`hostname`, `hostuuid`, `clientuuid`) VALUES (?, UUID(), UUID())');
+if ($stmt === false)
+    error(500, $db->error);
+$stmt->bind_param('s', $hn);
+if ($stmt->execute() !== true)
+    error(500, $stmt->error);
+*/
+
+$stmt = $db->prepare('SELECT `hostid` FROM `hosts` WHERE `hostname` = ?');
+if ($stmt === false)
+    error(500, $db->error);
+$stmt->bind_param('s', $hn);
+if ($stmt->execute() !== true)
+    error(500, $stmt->error);
+
+$obj = $stmt->get_result()->fetch_row();
+if ($obj === false)
+    error(500, $stmt->error);
+if ($obj === null)
+    error(500, "No host record");
+
+$hostid = $obj[0];
+
+
+// Process JSON input data
 $obj = json_decode(file_get_contents("php://input"), true);
 if ($obj == null)
     error(400, "Invalid data");
@@ -33,22 +71,15 @@ if (array_key_exists('ts', $obj)) {
     $ts = $dt->format("Y-m-d H:i:s");
 }
 
-
-
-$db = new mysqli($dbhost, $dbuser, $dbpw, $dbname);
-if ($db->connect_error)
-    error(500, "Connection failed: " . $db->connect_error);
-$db->set_charset('utf8mb4');
-
-function db_insert($db, $tbl, $ts, $hn, $cols, $types, $vals) {
+function db_insert($db, $tbl, $ts, $hostid, $cols, $types, $vals) {
     $scols = "";
     foreach ($cols as $c)
         $scols .= ",`" . $c . "`";
     $pars = str_repeat(",?", count($cols));
-    $stmt = $db->prepare('INSERT INTO ' . $tbl . ' (ts,hostname' . $scols . ') VALUES (?,?' . $pars . ')');
+    $stmt = $db->prepare('INSERT INTO ' . $tbl . ' (ts,hostid' . $scols . ') VALUES (?,?' . $pars . ')');
     if ($stmt === false)
         return ["code" => 500, "msg" => $db->error];
-    $stmt->bind_param('ss' . $types, $ts, $hn, ...$vals);
+    $stmt->bind_param('si' . $types, $ts, $hostid, ...$vals);
     if ($stmt->execute() !== true)
         return ["code" => 500, "msg" => $stmt->error];
     return ["code" => 200, "msg" => "OK"];
@@ -90,7 +121,7 @@ foreach ($obj['tables'] as $tbl => $rows) {
             else
                 $types .= "?";
         }
-        $r = db_insert($db, $tbl, $ts, $hn, $cols, $types, $vals);
+        $r = db_insert($db, $tbl, $ts, $hostid, $cols, $types, $vals);
         $rowret[] = $r;
         if ($r["code"] > $rowret[$errmax]["code"])
             $errmax = count($rowret) - 1;
@@ -110,5 +141,8 @@ foreach ($ret as $r) {
     }
 }
 
-echo json_encode(["code" => $code, "msg" => $msg, "tables" => $ret]);
+if ($v)
+    echo json_encode(["code" => $code, "msg" => $msg, "tables" => $ret]);
+else
+    echo json_encode(["code" => $code]);
 ?>

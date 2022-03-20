@@ -31,10 +31,29 @@ if ($db->connect_error)
     error(500, "Connection failed: " . $db->connect_error);
 $db->set_charset('utf8mb4');
 
+
+// Find hostid
+$stmt = $db->prepare('SELECT `hostid` FROM `hosts` WHERE `hostname` = ?');
+if ($stmt === false)
+    error(500, $db->error);
+$stmt->bind_param('s', $hn);
+if ($stmt->execute() !== true)
+    error(500, $stmt->error);
+
+$obj = $stmt->get_result()->fetch_row();
+if ($obj === false)
+    error(500, $stmt->error);
+if ($obj === null)
+    error(500, "No host record");
+
+$hostid = $obj[0];
+
+
+// Find records
 $tslimit = ' AND `ts` > SUBDATE(UTC_TIMESTAMP(), INTERVAL 24 HOUR) ORDER BY ts';
 
-$stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ?' . $tslimit);
-$stmt->bind_param('s', $hn);
+$stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostid` = ?' . $tslimit);
+$stmt->bind_param('i', $hostid);
 
 if ($tbl == "cpu") {
     $id = null;
@@ -43,12 +62,12 @@ if ($tbl == "cpu") {
 
     if (is_int($id)) {
         // Special case, details for specific CPU core
-        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ? AND `id` = ?' . $tslimit);
-        $stmt->bind_param('si', $hn, $id);
+        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostid` = ? AND `id` = ?' . $tslimit);
+        $stmt->bind_param('ii', $hostid, $id);
     } else {
         // Special case, generic idle percentage for CPU cores
-        $stmt = $db->prepare('SELECT `ts`, `id`, `idle` FROM `' . $tbl . '` WHERE `hostname` = ?' . $tslimit);
-        $stmt->bind_param('s', $hn);
+        $stmt = $db->prepare('SELECT `ts`, `id`, `idle` FROM `' . $tbl . '` WHERE `hostid` = ?' . $tslimit);
+        $stmt->bind_param('i', $hostid);
     }
 
 } else if ($tbl == "disk") {
@@ -58,8 +77,8 @@ if ($tbl == "cpu") {
 
     if ($disk) {
         // Special case, details for specific disk
-        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ? AND `disk` = ?' . $tslimit);
-        $stmt->bind_param('ss', $hn, $disk);
+        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostid` = ? AND `disk` = ?' . $tslimit);
+        $stmt->bind_param('is', $hostid, $disk);
     }
 
 } else if ($tbl == "netio") {
@@ -69,8 +88,8 @@ if ($tbl == "cpu") {
 
     if ($nic) {
         // Special case, details for specific nic
-        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ? AND `nic` = ?' . $tslimit);
-        $stmt->bind_param('ss', $hn, $nic);
+        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostid` = ? AND `nic` = ?' . $tslimit);
+        $stmt->bind_param('is', $hostid, $nic);
     }
 
 } else if ($tbl == "sensors") {
@@ -80,8 +99,8 @@ if ($tbl == "cpu") {
 
     if ($type) {
         // Special case, details for specific sensor type
-        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostname` = ? AND `type` = ?' . $tslimit);
-        $stmt->bind_param('ss', $hn, $type);
+        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostid` = ? AND `type` = ?' . $tslimit);
+        $stmt->bind_param('is', $hostid, $type);
     }
 }
 

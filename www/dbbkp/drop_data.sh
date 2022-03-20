@@ -23,7 +23,7 @@ $db->set_charset('utf8mb4');
 
 // Drop tables
 function drop_bkp_table($db, $tbl) {
-    $ret = $db->query('DROP TABLE `bkp_' . $tbl);
+    $ret = $db->query('DROP TABLE `bkp_' . $tbl . '`');
     if ($ret === false)
         error(500, $db->error);
 }

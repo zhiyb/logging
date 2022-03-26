@@ -50,7 +50,7 @@ $.getJSON("get.php?h=" + hn + "&t=" + t + "&type=" + type, data => {
     values.push({
       ts: ts,
       type: obj.sensor,
-      val: obj.data === null ? NaN : obj.data,
+      val: obj.data === null ? NaN : +obj.data,
     });
   }
 

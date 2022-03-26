@@ -52,7 +52,7 @@ $.getJSON("get_sensor_types.php?h=" + hn, data => {
         values.push({
           ts: ts,
           type: obj.sensor,
-          val: obj.data === null ? NaN : obj.data,
+          val: obj.data === null ? NaN : +obj.data,
         });
       }
 

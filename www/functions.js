@@ -464,7 +464,7 @@ function ChartZoomX(data, {
 function parse_ts(ts) {
   let dt = ts.split(/[- :]/);
   dt[1]--;
-  return new Date(...dt);
+  return new Date(Date.UTC(...dt));
 }
 
 function add_chart(e, values, opts, baseUrl = null) {

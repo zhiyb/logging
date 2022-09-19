@@ -96,11 +96,20 @@ if ($tbl == "cpu") {
     $type = null;
     if (array_key_exists('type', $_GET))
         $type = $_GET['type'];
+    $sensor = null;
+    if (array_key_exists('s', $_GET))
+        $sensor = $_GET['s'];
 
     if ($type) {
-        // Special case, details for specific sensor type
-        $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostid` = ? AND `type` = ?' . $tslimit);
-        $stmt->bind_param('is', $hostid, $type);
+        if ($sensor) {
+            // Special case, details for specific sensor
+            $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostid` = ? AND `type` = ? AND `sensor` = ?' . $tslimit);
+            $stmt->bind_param('iss', $hostid, $type, $sensor);
+        } else {
+            // Special case, details for specific sensor type
+            $stmt = $db->prepare('SELECT * FROM `' . $tbl . '` WHERE `hostid` = ? AND `type` = ?' . $tslimit);
+            $stmt->bind_param('is', $hostid, $type);
+        }
     }
 }
 

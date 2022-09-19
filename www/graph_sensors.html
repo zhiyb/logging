@@ -39,7 +39,7 @@ $.getJSON("get_sensor_types.php?h=" + hn, data => {
   let div = {};
   let e = $('#graph_sensors');
   for (const type of data) {
-    div[type] = $(`<div><h2><a href="graph_sensor.html?h=${hn}&type=${type}">${type}</a></h2></div>`);
+    div[type] = $(`<div><h2>${type}</h2></div>`);
     e.append(div[type]);
     $.getJSON("get.php?h=" + hn + "&t=" + t + "&type=" + type, data => {
       if (!data.length)
@@ -56,6 +56,7 @@ $.getJSON("get_sensor_types.php?h=" + hn, data => {
         });
       }
 
+      const baseUrl = `graph_sensor.html?h=${hn}&t=${type}&s=`;
       cmn.add_chart(div[type], values, {
         x: d => d.ts,
         y: d => d.val,
@@ -65,10 +66,10 @@ $.getJSON("get_sensor_types.php?h=" + hn, data => {
         width: 1024,
         height: 500,
         //curve: d3.curveMonotoneX,
-        colors: [cmn.schemeTableau10[3], cmn.schemeTableau10[0]],
+        //colors: [cmn.schemeTableau10[3], cmn.schemeTableau10[0]],
         mixBlendMode: "normal",
         linkedZoom: linkedZoom,
-      });
+      }, baseUrl);
     });
   }
 });

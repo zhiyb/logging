@@ -21,11 +21,14 @@ var hn = findGetParameter('h');
 if (!hn)
   hn = "pico";
 var t = "sensors";
-var type = findGetParameter('type');
+var type = findGetParameter('t');
 if (!type)
   type = "temp";
+var sensor = findGetParameter('s');
+if (!sensor)
+  sensor = "adc0";
 </script>
-<script>document.write(`<title>Logging graphs - ${t} - ${type} - ${hn}</title>`);</script>
+<script>document.write(`<title>Logging graphs - ${type} - ${sensor} - ${hn}</title>`);</script>
 </head>
 <body>
 <h1><script>document.write(hn);</script></h1>
@@ -39,7 +42,7 @@ import * as cmn from "./functions.js";
 
 let linkedZoom = [];
 
-$.getJSON("get.php?h=" + hn + "&t=" + t + "&type=" + type, data => {
+$.getJSON("get.php?h=" + hn + "&t=" + t + "&type=" + type + "&s=" + sensor, data => {
   if (!data.length)
     return;
 
@@ -63,7 +66,7 @@ $.getJSON("get.php?h=" + hn + "&t=" + t + "&type=" + type, data => {
     width: 1024,
     height: 500,
     //curve: d3.curveMonotoneX,
-    colors: [cmn.schemeTableau10[3], cmn.schemeTableau10[0]],
+    //colors: [cmn.schemeTableau10[3], cmn.schemeTableau10[0]],
     mixBlendMode: "normal",
     linkedZoom: linkedZoom,
   });

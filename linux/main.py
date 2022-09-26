@@ -2,7 +2,7 @@
 import os
 import datetime, time
 import socket
-import psutil
+import subprocess, psutil
 import json
 import traceback
 from uuid import UUID
@@ -125,19 +125,16 @@ while True:
 
     try:
         v = psutil.disk_io_counters(perdisk=True, nowrap=True)
+        models = {}
+        proc = subprocess.run(["lsblk", "-J", "-o", "NAME,TYPE,MODEL"], capture_output=True)
+        for disk in json.loads(proc.stdout.decode("utf8"))["blockdevices"]:
+            models[disk["name"]] = disk["model"]
     except:
         v = {}
     # Only report whole disks
-    par = []
-    for key in v.keys():
-        for k in v.keys():
-            if not k[-1].isdigit() and key != k and key.startswith(k):
-                par.append(key)
-                break
-    for p in par:
-        del v[p]
-    for key, val in v.items():
-        d = {"ts": ts, "disk": key}
+    for key in {disk for disk in v if disk in models}:
+        val = v[key]
+        d = {"ts": ts, "disk": models[key]}
         if not first and key in disks:
             prv = disks[key]
             d.update({  "interval": dsec,

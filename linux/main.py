@@ -134,7 +134,7 @@ while True:
     # Only report whole disks
     for key in {disk for disk in v if disk in models}:
         val = v[key]
-        d = {"ts": ts, "disk": models[key]}
+        d = {"ts": ts, "disk": models[key] or key}
         if not first and key in disks:
             prv = disks[key]
             d.update({  "interval": dsec,

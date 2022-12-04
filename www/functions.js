@@ -1,4 +1,6 @@
-import * as d3 from "https://cdn.skypack.dev/d3@7";
+//import * as d3 from "https://cdn.skypack.dev/d3@7";
+//import "https://cdn.jsdelivr.net/npm/d3@7";
+import "https://unpkg.com/d3@7";
 import "https://unpkg.com/htl@0.3.1";
 
 // https://github.com/observablehq/stdlib/blob/main/src/dom/uid.js

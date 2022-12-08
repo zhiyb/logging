@@ -130,9 +130,13 @@ while True:
     try:
         v = psutil.disk_io_counters(perdisk=True, nowrap=True)
         models = {}
-        proc = subprocess.run(["lsblk", "-J", "-o", "NAME,TYPE,MODEL,SERIAL"], capture_output=True)
+        try:
+            proc = subprocess.run(["lsblk", "-J", "-o", "NAME,TYPE,MODEL,SERIAL"], capture_output=True)
+        except:
+            proc = subprocess.run(["lsblk", "-J", "-o", "NAME,TYPE,MODEL,SERIAL"], stdout=subprocess.PIPE)
         for disk in json.loads(proc.stdout.decode("utf8"))["blockdevices"]:
-            models[disk["name"]] = " ".join([disk["model"], disk["serial"]]).strip()
+            if disk["model"] and disk["serial"]:
+                models[disk["name"]] = " ".join([disk["model"], disk["serial"]]).strip()
     except:
         v = {}
     # Only report whole disks

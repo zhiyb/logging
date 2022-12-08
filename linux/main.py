@@ -104,7 +104,9 @@ while True:
     for key, val in v.items():
         nlabels = 0
         for temp in val:
-            if 1 < temp.current < 120:
+            # Ignore unreliable sensors
+            if temp.label not in {"CPUTIN", "AUXTIN0", "AUXTIN1", "AUXTIN2", "AUXTIN3",
+                                  "PCH_CPU_TEMP", "PCH_CHIP_CPU_MAX_TEMP", "PCH_CHIP_TEMP"}:
                 label = temp.label or f"{key}_{nlabels}"
                 nlabels += 1
                 d = {"ts": ts, "sensor": key, "label": label}

@@ -102,11 +102,15 @@ while True:
 
     v = psutil.sensors_temperatures()
     for key, val in v.items():
+        nlabels = 0
         for temp in val:
-            d = {"ts": ts, "sensor": key, "label": temp.label}
-            if not first:
-                d.update({"temp": temp.current})
-            db_insert(db, "temp", d)
+            if 1 < temp.current < 120:
+                label = temp.label or f"{key}_{nlabels}"
+                nlabels += 1
+                d = {"ts": ts, "sensor": key, "label": label}
+                if not first:
+                    d.update({"temp": temp.current})
+                db_insert(db, "temp", d)
 
     netif = psutil.net_if_stats()
     v = psutil.net_io_counters(pernic=True, nowrap=True)

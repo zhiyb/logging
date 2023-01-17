@@ -66,7 +66,7 @@ if ($tbl == "cpu") {
         $stmt->bind_param('ii', $hostid, $id);
     } else {
         // Special case, generic idle percentage for CPU cores
-        $stmt = $db->prepare('SELECT `ts`, `id`, `iowait` + `idle` AS `idle` FROM `' . $tbl . '` WHERE `hostid` = ?' . $tslimit);
+        $stmt = $db->prepare('SELECT `ts`, `id`, IFNULL(`iowait`, 0) + `idle` AS `idle` FROM `' . $tbl . '` WHERE `hostid` = ?' . $tslimit);
         $stmt->bind_param('i', $hostid);
     }
 

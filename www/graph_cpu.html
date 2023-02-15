@@ -52,7 +52,7 @@ $.getJSON("get.php?h=" + hn + "&t=" + t + "&id=" + id, data => {
   for (let obj of data) {
     let ts = parse_ts(obj.ts);
 
-    for (let key of ["user", "system"]) {
+    for (let key of ["system"]) {
       values.push({
         ts: ts,
         type: key,

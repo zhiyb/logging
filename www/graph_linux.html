@@ -5,6 +5,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/svg+xml" href="/boo_vector_art.svg">
+<script src="https://cdn.plot.ly/plotly-2.26.0.min.js" charset="utf-8"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 <script>
 // https://stackoverflow.com/a/5448595
 function findGetParameter(parameterName) {
@@ -25,99 +27,86 @@ if (!hn)
 </head>
 <body>
 <h1><script>document.write(hn);</script></h1>
-<h2>CPU</h2>
-<div id="graph_cpu"></div>
-<h2>Memory</h2>
-<div id="graph_mem"></div>
-<h2>Network IO</h2>
-<div id="graph_netio"></div>
-<h2>Disk IO</h2>
-<div id="graph_disk"></div>
-<h2>Temperature</h2>
-<div id="graph_temp"></div>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<div id="graph"></div>
 
 <script type="module">
 import * as cmn from "./functions.js";
 
-let linkedZoom = [];
 let url = "get.php?h=" + hn + "&t=";
+let ajaxs = [];
+let values = {};
 
-$.getJSON(url + "cpu", data => {
+// CPU usage data
+ajaxs.push($.getJSON(url + "cpu", data => {
   if (!data.length)
     return;
 
-  let values = [];
-  let maxcpu = 0;
-  for (let obj of data) {
-    if (obj.id > maxcpu)
-      maxcpu = obj.id;
-
-    let ts = cmn.parse_ts(obj.ts);
-
-    values.push({
-      ts: ts,
-      type: "cpu" + obj.id,
-      val: obj.idle === null ? NaN : 100 - obj.idle,
-    });
+  values.cpu = {};
+  function add_new_key(key) {
+    if (values.cpu[key] != undefined)
+      return;
+    values.cpu[key] = {
+        name: key,
+        legendrank: 1,
+        legendgroup: "cpu",
+        legendgrouptitle: {text: "- cpu -"},
+        yaxis: "y5",
+        type: "scattergl",
+        mode: "lines",
+        line: {"width": 1},
+        x: [], y: [],
+    };
   }
 
-  const baseUrl = "graph_cpu.html?h=" + hn + "&t=cpu&l=";
-  cmn.add_chart($('#graph_cpu'), values, {
-    x: d => d.ts,
-    y: d => d.val,
-    z: d => d.type,
-    yLabel: "↑ %",
-    yDomain: [0, 100],
-    width: 1024,
-    height: 500,
-    //curve: d3.curveMonotoneX,
-    mixBlendMode: "normal",
-    linkedZoom: linkedZoom,
-  }, baseUrl);
-});
+  for (let obj of data) {
+    let ts = cmn.parse_ts(obj.ts);
+    let key = "cpu" + obj.id;
+    add_new_key(key);
+    values.cpu[key].x.push(ts);
+    values.cpu[key].y.push(obj.idle === null ? NaN : 100 - obj.idle);
+  }
+}));
 
-$.getJSON(url + "mem", data => {
+// Memory usage data
+ajaxs.push($.getJSON(url + "mem", data => {
   if (!data.length)
     return;
 
-  let values = [];
+  values.mem = {};
+  for (let key of ["used", "buffers", "cached", "zfs_arc", "free"]) {
+    values.mem[key] = {
+        name: key,
+        legendrank: 2,
+        legendgroup: "mem",
+        legendgrouptitle: {text: "- mem -"},
+        stackgroup: "mem",
+        yaxis: "y4",
+        //type: "scattergl",
+        line: {"width": 1},
+        x: [], y: [],
+    };
+  }
+
   let total = 0;
   for (let obj of data) {
     let ts = cmn.parse_ts(obj.ts);
     total = obj.total / 1024 / 1024 / 1024;
 
-    values.push({
-      ts: ts,
-      type: "used",
-      val: obj.total === null ? NaN : (obj.total - obj.buffers - obj.cached - obj.zfs_arc - obj.free) / 1024 / 1024 / 1024,
-    });
-    // "total", "available", "percent", "used", "free", "active", "inactive", "buffers", "cached", "shared", "slab"
+    let key = "used";
+    values.mem[key].x.push(ts);
+    values.mem[key].y.push(obj.total === null ? NaN :
+      (obj.total - obj.buffers - obj.cached - obj.zfs_arc - obj.free) / 1024 / 1024 / 1024);
+
     for (let key of ["buffers", "cached", "zfs_arc", "free"]) {
-      values.push({
-        ts: ts,
-        type: key,
-        val: obj.total === null ? NaN : obj[key] / 1024 / 1024 / 1024,
-      });
+      values.mem[key].x.push(ts);
+      values.mem[key].y.push(obj.total === null ? NaN :
+        obj[key] / 1024 / 1024 / 1024);
     }
   }
+}));
 
-  cmn.add_chart($('#graph_mem'), values, {
-    x: d => d.ts,
-    y: d => d.val,
-    z: d => d.type,
-    stacked: true,
-    yLabel: "↑ GiB",
-    yDomain: [0, total],
-    width: 1024,
-    height: 500,
-    colors: [cmn.schemeTableau10[3], cmn.schemeTableau10[1], cmn.schemeTableau10[0], cmn.schemeTableau10[9], cmn.schemeTableau10[2]],
-    linkedZoom: linkedZoom,
-  });
-});
-
-$.getJSON(url + "netio", data => {
+// Network IO usage data
+ajaxs.push($.getJSON(url + "netio", data => {
   if (!data.length)
     return;
 
@@ -129,40 +118,44 @@ $.getJSON(url + "netio", data => {
   if (!vmap.size)
     return;
 
-  let values = [];
+  values.netio = {};
+  function add_new_key(key) {
+    if (values.netio[key] != undefined)
+      return;
+    values.netio[key] = {
+        name: key,
+        legendrank: 3,
+        legendgroup: "netio",
+        legendgrouptitle: {text: "- netio -"},
+        yaxis: "y3",
+        type: "scattergl",
+        mode: "lines",
+        line: {"width": 1},
+        x: [], y: [],
+    };
+  }
+
   for (let obj of data) {
     if (!vmap.has(obj.nic))
       continue;
     let ts = cmn.parse_ts(obj.ts);
-    values.push({
-      ts: ts,
-      type: obj.nic + "_tx",
-      val: obj.interval === null ? NaN : obj.bytes_sent * 8 / obj.interval / 1024 / 1024,
-    });
-    values.push({
-      ts: ts,
-      type: obj.nic + "_rx",
-      val: obj.interval === null ? NaN : obj.bytes_recv * 8 / obj.interval / 1024 / 1024,
-    });
+
+    let key = obj.nic + "_tx";
+    add_new_key(key);
+    values.netio[key].x.push(ts);
+    values.netio[key].y.push(obj.interval === null ? NaN :
+      obj.bytes_sent * 8 / obj.interval / 1024 / 1024);
+
+    key = obj.nic + "_rx";
+    add_new_key(key);
+    values.netio[key].x.push(ts);
+    values.netio[key].y.push(obj.interval === null ? NaN :
+      obj.bytes_recv * 8 / obj.interval / 1024 / 1024);
   }
+}));
 
-  const baseUrl = "graph_netio.html?h=" + hn + "&t=netio&l=";
-  cmn.add_chart($('#graph_netio'), values, {
-    x: d => d.ts,
-    y: d => d.val,
-    z: d => d.type,
-    yLabel: "↑ Mbps",
-    //dashed: true,
-    width: 1024,
-    height: 500,
-    //curve: d3.curveMonotoneX,
-    colors: cmn.schemeTableau20,
-    mixBlendMode: "normal",
-    linkedZoom: linkedZoom,
-  }, baseUrl);
-});
-
-$.getJSON(url + "disk", data => {
+// Disk IO usage data
+ajaxs.push($.getJSON(url + "disk", data => {
   if (!data.length)
     return;
 
@@ -174,66 +167,108 @@ $.getJSON(url + "disk", data => {
   if (!vmap.size)
     return;
 
-  let values = [];
+  values.disk = {};
+  function add_new_key(key) {
+    if (values.disk[key] != undefined)
+      return;
+    values.disk[key] = {
+        name: key,
+        legendrank: 4,
+        legendgroup: "disk",
+        legendgrouptitle: {text: "- disk -"},
+        yaxis: "y2",
+        type: "scattergl",
+        mode: "lines",
+        line: {"width": 1},
+        x: [], y: [],
+    };
+  }
+
   for (let obj of data) {
     if (!vmap.has(obj.disk))
       continue;
     if (obj.disk.startsWith("dm-") || obj.disk.startsWith("loop"))
       continue;
     let ts = cmn.parse_ts(obj.ts);
-    values.push({
-      ts: ts,
-      type: obj.disk + "_w",
-      val: obj.interval === null ? NaN : obj.write_bytes / obj.interval / 1024 / 1024,
-    });
-    values.push({
-      ts: ts,
-      type: obj.disk + "_r",
-      val: obj.interval === null ? NaN : obj.read_bytes / obj.interval / 1024 / 1024,
-    });
+
+    let key = obj.disk + "_wr";
+    add_new_key(key);
+    values.disk[key].x.push(ts);
+    values.disk[key].y.push(obj.interval === null ? NaN :
+      obj.write_bytes / obj.interval / 1024 / 1024);
+
+    key = obj.disk + "_rd";
+    add_new_key(key);
+    values.disk[key].x.push(ts);
+    values.disk[key].y.push(obj.interval === null ? NaN :
+      obj.read_bytes / obj.interval / 1024 / 1024);
   }
+}));
 
-  const baseUrl = "graph_disk.html?h=" + hn + "&t=disk&l=";
-  cmn.add_chart($('#graph_disk'), values, {
-    x: d => d.ts,
-    y: d => d.val,
-    z: d => d.type,
-    yLabel: "↑ MB/s",
-    //dashed: true,
-    width: 1024,
-    height: 500,
-    //curve: d3.curveMonotoneX,
-    colors: cmn.schemeTableau20,
-    mixBlendMode: "normal",
-    linkedZoom: linkedZoom,
-  }, baseUrl);
-});
-
-$.getJSON(url + "temp", data => {
+// Temperature data
+ajaxs.push($.getJSON(url + "temp", data => {
   if (!data.length)
     return;
 
-  let values = [];
-  for (let obj of data) {
-    let ts = cmn.parse_ts(obj.ts);
-    values.push({
-      ts: ts,
-      type: obj.label !== "" ? obj.label : obj.sensor,
-      val: obj.temp === null ? NaN : obj.temp,
-    });
+  values.temp = {};
+  function add_new_key(key) {
+    if (values.temp[key] != undefined)
+      return;
+    values.temp[key] = {
+        name: key,
+        legendrank: 5,
+        legendgroup: "temp",
+        legendgrouptitle: {text: "- temp -"},
+        yaxis: "y",
+        type: "scattergl",
+        mode: "lines",
+        line: {"width": 1},
+        x: [], y: [],
+    };
   }
 
-  cmn.add_chart($('#graph_temp'), values, {
-    x: d => d.ts,
-    y: d => d.val,
-    z: d => d.type,
-    yLabel: "↑ ℃",
-    width: 1024,
-    height: 500,
-    //curve: d3.curveMonotoneX,
-    mixBlendMode: "normal",
-    linkedZoom: linkedZoom,
-  });
+  for (let obj of data) {
+    let ts = cmn.parse_ts(obj.ts);
+    let key = obj.label !== "" ? obj.label : obj.sensor;
+    add_new_key(key);
+    values.temp[key].x.push(ts);
+    values.temp[key].y.push(obj.temp === null ? NaN : obj.temp);
+  }
+}));
+
+
+
+// Plot after all ajax completed
+$.when(...ajaxs).done(function () {
+  let traces = [];
+  for (let kv in values)
+    for (let k in values[kv])
+      traces.push(values[kv][k]);
+
+  var layout = {
+    autosize: true,
+    height: 1800,
+    margin: {
+      t: 20,
+      b: 80,
+      l: 60,
+      r: 20,
+    },
+    showlegend: true,
+    legend: {
+      orientation: "h",
+      //yanchor: "bottom",
+      //y: 1,
+      groupclick: "toggleitem",
+    },
+    yaxis:  {domain: [0,   0.2], title: "temp (℃)"},
+    yaxis2: {domain: [0.2, 0.4], title: "disk (MB/s)"},
+    yaxis3: {domain: [0.4, 0.6], title: "netio (Mbps)"},
+    yaxis4: {domain: [0.6, 0.8], title: "mem (GiB)"},
+    yaxis5: {domain: [0.8, 1],   title: "cpu (%)"},
+  };
+
+  Plotly.react('graph', traces, layout, {responsive: true});
 });
 
 </script>

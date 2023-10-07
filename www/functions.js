@@ -494,6 +494,7 @@ function get_sensor_unit(type) {
     "humidity": "%",
     "gas_resistance": "Ω",
     "voltage": "V",
+    "power": "W",
   }
   const u = units[type];
   return u === undefined ? "value" : u;

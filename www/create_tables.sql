@@ -8,10 +8,10 @@ USE `logging`;
 
 SET NAMES utf8mb4;
 
-CREATE TABLE `client` (
+CREATE TABLE `clients` (
   `key` tinytext NOT NULL,
-  `hosts` text NOT NULL,
-  PRIMARY KEY (`key`(255))
+  `hostname` tinytext NOT NULL,
+  UNIQUE KEY `key_hostname` (`key`,`hostname`) USING HASH
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -56,7 +56,8 @@ CREATE TABLE `hosts` (
   `type` tinytext NOT NULL DEFAULT 'sensors',
   `hostuuid` tinytext NOT NULL,
   `clientuuid` tinytext NOT NULL,
-  `migerated` bit(1) NOT NULL DEFAULT b'0',
+  `migerated` bit(1) NOT NULL DEFAULT b'1',
+  `ts` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`hostid`),
   UNIQUE KEY `hostid` (`hostuuid`) USING HASH,
   UNIQUE KEY `clientid` (`clientuuid`) USING HASH,

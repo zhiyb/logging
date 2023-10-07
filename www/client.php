@@ -22,11 +22,16 @@ if ($db->connect_error)
     error(500, "Connection failed: " . $db->connect_error);
 $db->set_charset('utf8mb4');
 
-$stmt = $db->prepare('SELECT `hosts` FROM `client` WHERE `key` = ?');
+$stmt = $db->prepare(
+    'SELECT `type`, `hosts`.`hostname`, `hosts`.`clientuuid`, `ts` FROM `clients`
+    LEFT JOIN `hosts`
+    ON `clients`.`hostname` = `hosts`.`hostname`
+    WHERE `clients`.`key` = ?
+    ORDER BY `type`, `hostname`');
 $stmt->bind_param('s', $key);
 $stmt->execute();
-$obj = $stmt->get_result()->fetch_row();
+$obj = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 header('Content-Type: text/plain');
-echo json_encode(json_decode($obj[0]));
+echo json_encode($obj);
 ?>

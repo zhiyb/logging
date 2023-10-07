@@ -6,40 +6,44 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/svg+xml" href="/boo_vector_art.svg">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 </head>
 <body>
+  <h1></h1>
+  <div id="hosts"></div>
 <script>
 // https://stackoverflow.com/a/5448595
 function findGetParameter(parameterName) {
-    var result = null,
-        tmp = [];
-    var items = location.search.substr(1).split("&");
-    for (var index = 0; index < items.length; index++) {
+    let result = null, tmp = [];
+    let items = location.search.substr(1).split("&");
+    for (let index = 0; index < items.length; index++) {
         tmp = items[index].split("=");
         if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
     }
     return result;
 }
-var key = findGetParameter('k');
+let key = findGetParameter('k');
 if (!key)
   key = "guest";
-document.write(`<h1>Hosts - ${key}</h1><div id="hosts"/>`);
 
-let xmlHttp = new XMLHttpRequest();
-xmlHttp.onreadystatechange = function() {
-  if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
-    const hosts = JSON.parse(xmlHttp.responseText);
-    const div = document.getElementById('hosts');
-    for (const [k, v] of Object.entries(hosts)) {
-      let html = "";
-      for (const h of v.hosts)
-        html += `<a href="graph_${k}.html?h=${h}">${h}</a><br/>`;
-      div.innerHTML += `<h2>${v.desc}</h2><pre style="font-size:150%">${html}</pre>`;
-    }
+$("h1").text(`Hosts - ${key}`);
+$.getJSON(`client.php?key=${key}`, data => {
+  let hosts = {};
+  for (let o of data) {
+    if (hosts[o.type] == undefined)
+      hosts[o.type] = [];
+    hosts[o.type].push(o);
   }
-}
-xmlHttp.open("GET", `client.php?key=${key}`, true); // true for asynchronous
-xmlHttp.send(null);
+
+  let e = $("#hosts");
+  for (const [k, v] of Object.entries(hosts)) {
+    e.append(`<h2>${k}</h2>`);
+    let eh = $(`<pre style="font-size:150%"></pre>`);
+    for (const h of v)
+      eh.append(`${h.ts}  <a href="graph_${k}.html?h=${h.hostname}">${h.hostname}</a><br/>`);
+    e.append(eh);
+  }
+});
 </script>
 </body>
 </html>

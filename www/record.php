@@ -86,6 +86,13 @@ if (array_key_exists('ts', $obj)) {
     $ts = $dt->format("Y-m-d H:i:s");
 }
 
+// Update host activity timestamp
+$stmt = $db->prepare('UPDATE `hosts` SET `ts` = ? WHERE `hostid` = ?');
+$stmt->bind_param('si', $ts, $hostid);
+if ($stmt->execute() !== true)
+    error(500, $stmt->error);
+
+// Update database
 function db_insert($db, $tbl, $ts, $hostid, $cols, $types, $vals) {
     $scols = "";
     foreach ($cols as $c)

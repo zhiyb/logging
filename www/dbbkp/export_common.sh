@@ -24,6 +24,6 @@ $db->set_charset('utf8mb4');
 // Dump tables
 passthru('mysqldump --skip-lock-tables --no-create-info --skip-add-drop-table --insert-ignore ' .
     '-u ' . $dbuser . ' -p"' . $dbpw . '" -h ' . $dbhost . ' ' . $dbname . ' ' .
-    'hosts client | gzip -c');
+    'hosts clients | gzip -c');
 ?>
 PHP

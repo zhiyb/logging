@@ -33,244 +33,160 @@ if (!hn)
 import * as cmn from "./functions.js";
 
 let url = "get.php?h=" + hn + "&t=";
-let ajaxs = [];
-let values = {};
+let cfgs = [];
 
-// CPU usage data
-ajaxs.push($.getJSON(url + "cpu", data => {
-  if (!data.length)
-    return;
+function add_data(values, key, x, y) {
+  if (values[key] == undefined)
+    values[key] = {x: [], y: []}
+  values[key].x.push(x);
+  values[key].y.push(y);
+}
 
-  values.cpu = {};
-  function add_new_key(key) {
-    if (values.cpu[key] != undefined)
+
+cfgs.push({
+  id: "cpu",
+  ytitle: "cpu (%)",
+  type: "line",
+  url: url + "cpu",
+
+  func: data => {
+    if (!data.length)
       return;
-    values.cpu[key] = {
-        name: key,
-        legendrank: 1,
-        legendgroup: "cpu",
-        legendgrouptitle: {text: "- cpu -"},
-        yaxis: "y5",
-        type: "scattergl",
-        mode: "lines",
-        line: {"width": 1},
-        x: [], y: [],
-    };
-  }
 
-  for (let obj of data) {
-    let ts = cmn.parse_ts(obj.ts);
-    let key = "cpu" + obj.id;
-    add_new_key(key);
-    values.cpu[key].x.push(ts);
-    values.cpu[key].y.push(obj.idle === null ? NaN : 100 - obj.idle);
-  }
-}));
-
-// Memory usage data
-ajaxs.push($.getJSON(url + "mem", data => {
-  if (!data.length)
-    return;
-
-  values.mem = {};
-  for (let key of ["used", "buffers", "cached", "zfs_arc", "free"]) {
-    values.mem[key] = {
-        name: key,
-        legendrank: 2,
-        legendgroup: "mem",
-        legendgrouptitle: {text: "- mem -"},
-        stackgroup: "mem",
-        yaxis: "y4",
-        //type: "scattergl",
-        line: {"width": 1},
-        x: [], y: [],
-    };
-  }
-
-  let total = 0;
-  for (let obj of data) {
-    let ts = cmn.parse_ts(obj.ts);
-    total = obj.total / 1024 / 1024 / 1024;
-
-    let key = "used";
-    values.mem[key].x.push(ts);
-    values.mem[key].y.push(obj.total === null ? NaN :
-      (obj.total - obj.buffers - obj.cached - obj.zfs_arc - obj.free) / 1024 / 1024 / 1024);
-
-    for (let key of ["buffers", "cached", "zfs_arc", "free"]) {
-      values.mem[key].x.push(ts);
-      values.mem[key].y.push(obj.total === null ? NaN :
-        obj[key] / 1024 / 1024 / 1024);
-    }
-  }
-}));
-
-// Network IO usage data
-ajaxs.push($.getJSON(url + "netio", data => {
-  if (!data.length)
-    return;
-
-  // Remove all zero series
-  let vmap = new Set();
-  for (const obj of data)
-    if (obj.bytes_sent || obj.bytes_recv)
-      vmap.add(obj.nic);
-  if (!vmap.size)
-    return;
-
-  values.netio = {};
-  function add_new_key(key) {
-    if (values.netio[key] != undefined)
-      return;
-    values.netio[key] = {
-        name: key,
-        legendrank: 3,
-        legendgroup: "netio",
-        legendgrouptitle: {text: "- netio -"},
-        yaxis: "y3",
-        type: "scattergl",
-        mode: "lines",
-        line: {"width": 1},
-        x: [], y: [],
-    };
-  }
-
-  for (let obj of data) {
-    if (!vmap.has(obj.nic))
-      continue;
-    let ts = cmn.parse_ts(obj.ts);
-
-    let key = obj.nic + "_tx";
-    add_new_key(key);
-    values.netio[key].x.push(ts);
-    values.netio[key].y.push(obj.interval === null ? NaN :
-      obj.bytes_sent * 8 / obj.interval / 1024 / 1024);
-
-    key = obj.nic + "_rx";
-    add_new_key(key);
-    values.netio[key].x.push(ts);
-    values.netio[key].y.push(obj.interval === null ? NaN :
-      obj.bytes_recv * 8 / obj.interval / 1024 / 1024);
-  }
-}));
-
-// Disk IO usage data
-ajaxs.push($.getJSON(url + "disk", data => {
-  if (!data.length)
-    return;
-
-  // Remove all zero series
-  let vmap = new Set();
-  for (const obj of data)
-    if (obj.write_bytes || obj.read_bytes)
-      vmap.add(obj.disk);
-  if (!vmap.size)
-    return;
-
-  values.disk = {};
-  function add_new_key(key) {
-    if (values.disk[key] != undefined)
-      return;
-    values.disk[key] = {
-        name: key,
-        legendrank: 4,
-        legendgroup: "disk",
-        legendgrouptitle: {text: "- disk -"},
-        yaxis: "y2",
-        type: "scattergl",
-        mode: "lines",
-        line: {"width": 1},
-        x: [], y: [],
-    };
-  }
-
-  for (let obj of data) {
-    if (!vmap.has(obj.disk))
-      continue;
-    if (obj.disk.startsWith("dm-") || obj.disk.startsWith("loop"))
-      continue;
-    let ts = cmn.parse_ts(obj.ts);
-
-    let key = obj.disk + "_wr";
-    add_new_key(key);
-    values.disk[key].x.push(ts);
-    values.disk[key].y.push(obj.interval === null ? NaN :
-      obj.write_bytes / obj.interval / 1024 / 1024);
-
-    key = obj.disk + "_rd";
-    add_new_key(key);
-    values.disk[key].x.push(ts);
-    values.disk[key].y.push(obj.interval === null ? NaN :
-      obj.read_bytes / obj.interval / 1024 / 1024);
-  }
-}));
-
-// Temperature data
-ajaxs.push($.getJSON(url + "temp", data => {
-  if (!data.length)
-    return;
-
-  values.temp = {};
-  function add_new_key(key) {
-    if (values.temp[key] != undefined)
-      return;
-    values.temp[key] = {
-        name: key,
-        legendrank: 5,
-        legendgroup: "temp",
-        legendgrouptitle: {text: "- temp -"},
-        yaxis: "y",
-        type: "scattergl",
-        mode: "lines",
-        line: {"width": 1},
-        x: [], y: [],
-    };
-  }
-
-  for (let obj of data) {
-    let ts = cmn.parse_ts(obj.ts);
-    let key = obj.label !== "" ? obj.label : obj.sensor;
-    add_new_key(key);
-    values.temp[key].x.push(ts);
-    values.temp[key].y.push(obj.temp === null ? NaN : obj.temp);
-  }
-}));
-
-
-
-// Plot after all ajax completed
-$.when(...ajaxs).done(function () {
-  let traces = [];
-  for (let kv in values)
-    for (let k in values[kv])
-      traces.push(values[kv][k]);
-
-  var layout = {
-    autosize: true,
-    height: 1800,
-    margin: {
-      t: 20,
-      b: 80,
-      l: 60,
-      r: 20,
-    },
-    showlegend: true,
-    legend: {
-      orientation: "h",
-      //yanchor: "bottom",
-      //y: 1,
-      groupclick: "toggleitem",
-    },
-    yaxis:  {domain: [0,   0.2], title: "temp (℃)"},
-    yaxis2: {domain: [0.2, 0.4], title: "disk (MB/s)"},
-    yaxis3: {domain: [0.4, 0.6], title: "netio (Mbps)"},
-    yaxis4: {domain: [0.6, 0.8], title: "mem (GiB)"},
-    yaxis5: {domain: [0.8, 1],   title: "cpu (%)"},
-  };
-
-  Plotly.react('graph', traces, layout, {responsive: true});
+    let values = {};
+    for (let obj of data)
+      add_data(values,
+        "cpu" + obj.id,
+        cmn.parse_ts(obj.ts),
+        obj.idle === null ? NaN : 100 - obj.idle);
+    cmn.add_traces("cpu", values);
+  },
 });
 
+
+cfgs.push({
+  id: "mem",
+  ytitle: "mem (GiB)",
+  type: "stack",
+  url: url + "mem",
+
+  func: data => {
+    if (!data.length)
+      return;
+
+    let values = {};
+    for (let obj of data) {
+      let ts = cmn.parse_ts(obj.ts);
+      add_data(values, "used", ts, obj.total === null ? NaN :
+        (obj.total - obj.buffers - obj.cached - obj.zfs_arc - obj.free) / 1024 / 1024 / 1024);
+
+      for (let key of ["buffers", "cached", "zfs_arc", "free"])
+        add_data(values, key, ts, obj.total === null ? NaN :
+          obj[key] / 1024 / 1024 / 1024);
+    }
+    cmn.add_traces("mem", values);
+  },
+});
+
+
+cfgs.push({
+  id: "netio",
+  ytitle: "netio (Mbps)",
+  type: "line",
+  url: url + "netio",
+
+  func: data => {
+    if (!data.length)
+      return;
+
+    // Remove all zero series
+    let vmap = new Set();
+    for (const obj of data)
+      if (obj.bytes_sent || obj.bytes_recv)
+        vmap.add(obj.nic);
+    if (!vmap.size)
+      return;
+
+    let values = {};
+    for (let obj of data) {
+      if (!vmap.has(obj.nic))
+        continue;
+      let ts = cmn.parse_ts(obj.ts);
+
+      add_data(values, obj.nic + "_tx", ts,
+        obj.interval === null ? NaN :
+          obj.bytes_sent * 8 / obj.interval / 1024 / 1024);
+
+      add_data(values, obj.nic + "_rx", ts,
+        obj.interval === null ? NaN :
+          obj.bytes_recv * 8 / obj.interval / 1024 / 1024);
+    }
+    cmn.add_traces("netio", values);
+  },
+});
+
+
+cfgs.push({
+  id: "disk",
+  ytitle: "disk (MB/s)",
+  type: "line",
+  url: url + "disk",
+
+  func: data => {
+    if (!data.length)
+      return;
+
+    // Remove all zero series
+    let vmap = new Set();
+    for (const obj of data)
+      if (obj.write_bytes || obj.read_bytes)
+        vmap.add(obj.disk);
+    if (!vmap.size)
+      return;
+
+    let values = {};
+    for (let obj of data) {
+      if (!vmap.has(obj.disk))
+        continue;
+      if (obj.disk.startsWith("dm-") || obj.disk.startsWith("loop"))
+        continue;
+      let ts = cmn.parse_ts(obj.ts);
+
+      add_data(values, obj.disk + "_w", ts,
+        obj.interval === null ? NaN :
+          obj.write_bytes / obj.interval / 1024 / 1024);
+
+      add_data(values, obj.disk + "_r", ts,
+        obj.interval === null ? NaN :
+          obj.read_bytes / obj.interval / 1024 / 1024);
+    }
+    cmn.add_traces("disk", values);
+  },
+});
+
+
+cfgs.push({
+  id: "temp",
+  ytitle: "temp (℃)",
+  type: "line",
+  url: url + "temp",
+
+  func: data => {
+    if (!data.length)
+      return;
+
+    let values = {};
+    for (let obj of data)
+      add_data(values,
+        obj.label !== "" ? obj.label : obj.sensor,
+        cmn.parse_ts(obj.ts),
+        obj.temp === null ? NaN : obj.temp);
+    cmn.add_traces("temp", values);
+  },
+});
+
+
+cmn.draw_chart("graph", cfgs);
 </script>
 </body>
 </html>

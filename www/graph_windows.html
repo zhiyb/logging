@@ -5,6 +5,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/svg+xml" href="/boo_vector_art.svg">
+<script src="https://cdn.plot.ly/plotly-2.26.0.min.js" charset="utf-8"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 <script>
 // https://stackoverflow.com/a/5448595
 function findGetParameter(parameterName) {
@@ -25,227 +27,149 @@ if (!hn)
 </head>
 <body>
 <h1><script>document.write(hn);</script></h1>
-<h2>CPU</h2>
-<div id="graph_cpu"></div>
-<h2>Memory</h2>
-<div id="graph_mem"></div>
-<h2>Network IO</h2>
-<div id="graph_netio"></div>
-<h2>Disk IO</h2>
-<div id="graph_disk"></div>
-<h2>Temperature</h2>
-<div id="graph_temp"></div>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<div id="graph"></div>
 
 <script type="module">
 import * as cmn from "./functions.js";
 
-let linkedZoom = [];
 let url = "get.php?h=" + hn + "&t=";
+let cfgs = [];
 
-$.getJSON(url + "cpu", data => {
-  if (!data.length)
-    return;
+function add_data(values, key, x, y) {
+  if (values[key] == undefined)
+    values[key] = {x: [], y: []}
+  values[key].x.push(x);
+  values[key].y.push(y);
+}
 
-  let values = [];
-  let maxcpu = 0;
-  for (let obj of data) {
-    if (obj.id > maxcpu)
-      maxcpu = obj.id;
 
-    let ts = cmn.parse_ts(obj.ts);
+cfgs.push({
+  id: "cpu",
+  ytitle: "cpu (%)",
+  type: "line",
+  url: url + "cpu",
 
-    values.push({
-      ts: ts,
-      type: "cpu" + obj.id,
-      val: obj.idle === null ? NaN : 100 - obj.idle,
-    });
-  }
+  func: data => {
+    if (!data.length)
+      return;
 
-  const baseUrl = "graph_cpu.html?h=" + hn + "&t=cpu&l=";
-  cmn.add_chart($('#graph_cpu'), values, {
-    x: d => d.ts,
-    y: d => d.val,
-    z: d => d.type,
-    yLabel: "↑ %",
-    yDomain: [0, 100],
-    width: 1024,
-    height: 500,
-    //curve: d3.curveMonotoneX,
-    mixBlendMode: "normal",
-    linkedZoom: linkedZoom,
-  }, baseUrl);
+    let values = {};
+    for (let obj of data)
+      add_data(values,
+        "cpu" + obj.id,
+        cmn.parse_ts(obj.ts),
+        obj.idle === null ? NaN : 100 - obj.idle);
+    cmn.add_traces("cpu", values);
+  },
 });
 
-$.getJSON(url + "mem", data => {
-  if (!data.length)
-    return;
 
-  let values = [];
-  let total = 0;
-  for (let obj of data) {
-    let ts = cmn.parse_ts(obj.ts);
-    total = obj.total / 1024 / 1024 / 1024;
+cfgs.push({
+  id: "mem",
+  ytitle: "mem (GiB)",
+  type: "stack",
+  url: url + "mem",
 
-    values.push({
-      ts: ts,
-      type: "used",
-      val: obj.total === null ? NaN : obj.used / 1024 / 1024 / 1024,
-    });
-    values.push({
-      ts: ts,
-      type: "others",
-      val: obj.total === null ? NaN : (obj.total - obj.available - obj.used) / 1024 / 1024 / 1024,
-    });
-    values.push({
-      ts: ts,
-      type: "available",
-      val: obj.total === null ? NaN : (obj.available - obj.free) / 1024 / 1024 / 1024,
-    });
-    // "total", "available", "percent", "used", "free", "active", "inactive", "buffers", "cached", "shared", "slab"
-    for (let key of ["free"]) {
-      values.push({
-        ts: ts,
-        type: key,
-        val: obj.total === null ? NaN : obj[key] / 1024 / 1024 / 1024,
-      });
+  func: data => {
+    if (!data.length)
+      return;
+
+    let values = {};
+    for (let obj of data) {
+      let ts = cmn.parse_ts(obj.ts);
+      add_data(values, "used", ts, obj.total === null ? NaN :
+        obj.used / 1024 / 1024 / 1024);
+      add_data(values, "others", ts, obj.total === null ? NaN :
+        (obj.total - obj.available - obj.used) / 1024 / 1024 / 1024);
+      add_data(values, "available", ts, obj.total === null ? NaN :
+        (obj.available - obj.free) / 1024 / 1024 / 1024);
+      add_data(values, "used", ts, obj.total === null ? NaN :
+        (obj.total - obj.buffers - obj.cached - obj.free) / 1024 / 1024 / 1024);
+      add_data(values, "free", ts, obj.total === null ? NaN :
+        obj.free / 1024 / 1024 / 1024);
     }
-  }
-
-  cmn.add_chart($('#graph_mem'), values, {
-    x: d => d.ts,
-    y: d => d.val,
-    z: d => d.type,
-    stacked: true,
-    yLabel: "↑ GiB",
-    yDomain: [0, total],
-    width: 1024,
-    height: 500,
-    colors: [cmn.schemeTableau10[3], cmn.schemeTableau10[1], cmn.schemeTableau10[0], cmn.schemeTableau10[2]],
-    linkedZoom: linkedZoom,
-  });
+    cmn.add_traces("mem", values);
+  },
 });
 
-$.getJSON(url + "netio", data => {
-  if (!data.length)
-    return;
 
-  // Remove all zero series
-  let vmap = new Set();
-  for (const obj of data)
-    if (obj.bytes_sent || obj.bytes_recv)
-      vmap.add(obj.nic);
-  if (!vmap.size)
-    return;
+cfgs.push({
+  id: "netio",
+  ytitle: "netio (Mbps)",
+  type: "line",
+  url: url + "netio",
 
-  let values = [];
-  for (let obj of data) {
-    if (!vmap.has(obj.nic))
-      continue;
-    if (obj.nic.startsWith("Loopback"))
-      continue;
-    let ts = cmn.parse_ts(obj.ts);
-    values.push({
-      ts: ts,
-      type: obj.nic + "_TX",
-      val: obj.interval === null ? NaN : obj.bytes_sent * 8 / obj.interval / 1024 / 1024,
-    });
-    values.push({
-      ts: ts,
-      type: obj.nic + "_RX",
-      val: obj.interval === null ? NaN : obj.bytes_recv * 8 / obj.interval / 1024 / 1024,
-    });
-  }
+  func: data => {
+    if (!data.length)
+      return;
 
-  const baseUrl = "graph_netio.html?h=" + hn + "&t=netio&l=";
-  cmn.add_chart($('#graph_netio'), values, {
-    x: d => d.ts,
-    y: d => d.val,
-    z: d => d.type,
-    yLabel: "↑ Mbps",
-    //dashed: true,
-    width: 1024,
-    height: 500,
-    //curve: d3.curveMonotoneX,
-    colors: cmn.schemeTableau20,
-    mixBlendMode: "normal",
-    linkedZoom: linkedZoom,
-  }, baseUrl);
+    // Remove all zero series
+    let vmap = new Set();
+    for (const obj of data)
+      if (obj.bytes_sent || obj.bytes_recv)
+        vmap.add(obj.nic);
+    if (!vmap.size)
+      return;
+
+    let values = {};
+    for (let obj of data) {
+      if (!vmap.has(obj.nic))
+        continue;
+      if (obj.nic.startsWith("Loopback"))
+        continue;
+      let ts = cmn.parse_ts(obj.ts);
+
+      add_data(values, obj.nic + "_tx", ts,
+        obj.interval === null ? NaN :
+          obj.bytes_sent * 8 / obj.interval / 1024 / 1024);
+
+      add_data(values, obj.nic + "_rx", ts,
+        obj.interval === null ? NaN :
+          obj.bytes_recv * 8 / obj.interval / 1024 / 1024);
+    }
+    cmn.add_traces("netio", values);
+  },
 });
 
-$.getJSON(url + "disk", data => {
-  if (!data.length)
-    return;
 
-  // Remove all zero series
-  let vmap = new Set();
-  for (const obj of data)
-    if (obj.write_bytes || obj.read_bytes)
-      vmap.add(obj.disk);
-  if (!vmap.size)
-    return;
+cfgs.push({
+  id: "disk",
+  ytitle: "disk (MB/s)",
+  type: "line",
+  url: url + "disk",
 
-  let values = [];
-  for (const obj of data) {
-    if (!vmap.has(obj.disk))
-      continue;
-    let ts = cmn.parse_ts(obj.ts);
-    values.push({
-      ts: ts,
-      type: obj.disk + "_W",
-      val: obj.interval === null ? NaN : obj.write_bytes / obj.interval / 1024 / 1024,
-    });
-    values.push({
-      ts: ts,
-      type: obj.disk + "_R",
-      val: obj.interval === null ? NaN : obj.read_bytes / obj.interval / 1024 / 1024,
-    });
-  }
+  func: data => {
+    if (!data.length)
+      return;
 
-  const baseUrl = "graph_disk.html?h=" + hn + "&t=disk&l=";
-  cmn.add_chart($('#graph_disk'), values, {
-    x: d => d.ts,
-    y: d => d.val,
-    z: d => d.type,
-    yLabel: "↑ MB/s",
-    //dashed: true,
-    width: 1024,
-    height: 500,
-    //curve: d3.curveMonotoneX,
-    colors: cmn.schemeTableau20,
-    mixBlendMode: "normal",
-    linkedZoom: linkedZoom,
-  }, baseUrl);
+    // Remove all zero series
+    let vmap = new Set();
+    for (const obj of data)
+      if (obj.write_bytes || obj.read_bytes)
+        vmap.add(obj.disk);
+    if (!vmap.size)
+      return;
+
+    let values = {};
+    for (let obj of data) {
+      if (!vmap.has(obj.disk))
+        continue;
+      let ts = cmn.parse_ts(obj.ts);
+
+      add_data(values, obj.disk + "_w", ts,
+        obj.interval === null ? NaN :
+          obj.write_bytes / obj.interval / 1024 / 1024);
+
+      add_data(values, obj.disk + "_r", ts,
+        obj.interval === null ? NaN :
+          obj.read_bytes / obj.interval / 1024 / 1024);
+    }
+    cmn.add_traces("disk", values);
+  },
 });
 
-$.getJSON(url + "temp", data => {
-  if (!data.length)
-    return;
 
-  let values = [];
-  for (let obj of data) {
-    let ts = cmn.parse_ts(obj.ts);
-    values.push({
-      ts: ts,
-      type: obj.label !== "" ? obj.label : obj.sensor,
-      val: obj.temp === null ? NaN : obj.temp,
-    });
-  }
-
-  cmn.add_chart($('#graph_temp'), values, {
-    x: d => d.ts,
-    y: d => d.val,
-    z: d => d.type,
-    yLabel: "↑ ℃",
-    width: 1024,
-    height: 500,
-    //curve: d3.curveMonotoneX,
-    mixBlendMode: "normal",
-    linkedZoom: linkedZoom,
-  });
-});
-
+cmn.draw_chart("graph", cfgs);
 </script>
 </body>
 </html>

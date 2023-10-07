@@ -42,7 +42,7 @@ function draw_chart(domkey, cfg) {
   $.when(...ajaxs).done(function () {
     let layout = {
       autosize: true,
-      height: 600 + 300 * cfg.length,
+      height: 400 + 300 * cfg.length,
       margin: {
         t: 20,
         b: 80,

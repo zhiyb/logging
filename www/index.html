@@ -11,7 +11,10 @@
 <body>
   <h1></h1>
   <div id="hosts"></div>
-<script>
+
+<script type="module">
+import * as cmn from "./functions.js";
+
 // https://stackoverflow.com/a/5448595
 function findGetParameter(parameterName) {
     let result = null, tmp = [];
@@ -39,8 +42,15 @@ $.getJSON(`client.php?key=${key}`, data => {
   for (const [k, v] of Object.entries(hosts)) {
     e.append(`<h2>${k}</h2>`);
     let eh = $(`<pre style="font-size:150%"></pre>`);
-    for (const h of v)
-      eh.append(`${h.ts}  <a href="graph_${k}.html?h=${h.hostname}">${h.hostname}</a><br/>`);
+    for (const h of v) {
+      // online threshold 10 minutes
+      const dt_online_ms = 10 * 60 * 1000;
+      let ts = cmn.parse_ts(h.ts);
+      let dt_ms = Date.now() - ts;
+      let act = dt_ms >= dt_online_ms ? "❌" : "🌐";
+      eh.append(`${act} <a href="graph_${k}.html?h=${h.hostname}">${h.hostname}</a><br/>`);
+      //eh.append(`${ts.toLocaleString()} | ${act} | <a href="graph_${k}.html?h=${h.hostname}">${h.hostname}</a><br/>`);
+    }
     e.append(eh);
   }
 });

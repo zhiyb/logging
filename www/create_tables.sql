@@ -11,8 +11,9 @@ SET NAMES utf8mb4;
 CREATE TABLE `clients` (
   `key` tinytext NOT NULL,
   `hostname` tinytext NOT NULL,
-  UNIQUE KEY `key_hostname` (`key`,`hostname`) USING HASH
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  UNIQUE KEY `key_hostname` (`key`,`hostname`) USING HASH,
+  KEY `key` (`key`(255))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 CREATE TABLE `cpu` (

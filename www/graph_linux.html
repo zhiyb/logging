@@ -28,6 +28,8 @@ if (!hn)
 <body>
 <h1><script>document.write(hn);</script></h1>
 <div id="graph"></div>
+<h2>CPU usage details</h2>
+<div id="cpu_details"></div>
 
 <script type="module">
 import * as cmn from "./functions.js";
@@ -54,12 +56,20 @@ cfgs.push({
       return;
 
     let values = {};
-    for (let obj of data)
+    let cpuids = new Set();
+    for (let obj of data) {
+      let key = "cpu" + obj.id;
+      cpuids.add(key);
       add_data(values,
-        "cpu" + obj.id,
+        key,
         cmn.parse_ts(obj.ts),
         obj.idle === null ? NaN : 100 - obj.idle);
+    }
     cmn.add_traces("cpu", values);
+
+    let e = $("#cpu_details");
+    for (let key of cpuids)
+      e.append(`<a href="graph_cpu.html?h=${hn}&t=cpu&l=${key}">${key}</a><br>`);
   },
 });
 
